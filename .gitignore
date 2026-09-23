@@ -9,3 +9,6 @@ Thumbs.db
 
 # exploratory / one-off scripts (kept locally, not part of the pipeline)
 scratch/
+
+# obsolete pre-fix scrape output (kept locally as history, not in the repo)
+checkpoint/archive/
