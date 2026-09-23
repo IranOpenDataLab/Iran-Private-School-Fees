@@ -1,0 +1,90 @@
+{
+  "detail": {
+    "school": {
+      "or_path": [
+        "IR2O2O8O3Opz"
+      ],
+      "fname": "زهرا",
+      "lname": "برغمدي",
+      "rg_name": "اداره آموزش و پرورش ناحیه تهران .منطقه 1",
+      "prv_name": "اداره کل آموزش و پرورش شهر تهران",
+      "address": " استان تهران- شهرستان شميرانات- بخش مرکزي- شهر تجريش- محله ازگل- خيابان خيابان ازگل-  بلوار ستاد نيروي زميني ارتش- پلاک 0- طبقه همکف-",
+      "gendertype_id": "1",
+      "stagetype_id": "3",
+      "school_name": "پرچم داران قرن",
+      "school_id": "80054934",
+      "founder": {
+        "fname": "اسداله",
+        "lname": "علامه"
+      }
+    },
+    "IsUserLogin": null,
+    "LoginUser": {
+      "username": null,
+      "firstName": "",
+      "lastName": "",
+      "ip": "93.118.112.105"
+    },
+    "ecreq": false
+  },
+  "licenses": {
+    "school": {
+      "licenses": [
+        {
+          "RequestNumber": 3506150,
+          "RequestId": "7FE1E26F-B116-E732-A410-3A0EF82A9A11",
+          "TypeAgent": false,
+          "CodeRequest": 12202875,
+          "AreaName": "منطقۀ 01",
+          "FirstName": "اسداله",
+          "SurName": "علامه",
+          "NationalCode": "6189195717",
+          "DateRequest": "2023-11-19T08:41:34.673Z",
+          "MainLevelName": "ابتدایی دوره اول و دوم  پسرانه",
+          "StateReq": 1,
+          "OperationName": "صدورمجوز راه اندازی مدرسه",
+          "OperationType": 2,
+          "OperationId": "3",
+          "HologramNumber": null,
+          "StateName": "شهر تهران",
+          "SchoolId": "141636",
+          "SchoolType": "1",
+          "Code": "80054934"
+        }
+      ]
+    },
+    "IsUserLogin": null,
+    "LoginUser": {
+      "username": null,
+      "firstName": "",
+      "lastName": "",
+      "ip": "93.118.112.105"
+    },
+    "ecreq": false
+  },
+  "tuition_history": {
+    "tuition_history": {
+      "1403": {
+        "tution": "310000000",
+        "extra_curricular": "124000000",
+        "extra_hour": "12",
+        "obj_status": "1"
+      },
+      "1404": {
+        "final_tuition": "360000000",
+        "final_extra_curricular": "144000000.000000000000000000000",
+        "final_extra_hour": "12",
+        "objection_status": null
+      },
+      "1405": null
+    },
+    "IsUserLogin": null,
+    "LoginUser": {
+      "username": null,
+      "firstName": "",
+      "lastName": "",
+      "ip": "93.118.112.105"
+    },
+    "ecreq": false
+  }
+}

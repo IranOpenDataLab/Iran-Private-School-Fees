@@ -1,0 +1,11 @@
+{
+  "total": "58",
+  "p1_count": 50,
+  "p2_count": 8,
+  "p1_first": "بوستان دانش",
+  "p2_first": "اندیشه سفید",
+  "overlap": 0,
+  "last_page": 2,
+  "last_count": 8,
+  "after_last_error": "API error: {'text': 'با فیلتر های داده شده در این منطقه مدرسه ای یافت نشد!!!', 'type': 'error', 'title': 'خطا', 'then': {}}"
+}

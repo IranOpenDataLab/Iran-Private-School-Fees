@@ -1,0 +1,1 @@
+"{\"school\":{\"licenses\":[]},\"IsUserLogin\":null,\"LoginUser\":{\"username\":null,\"firstName\":\"\",\"lastName\":\"\",\"ip\":\"93.118.112.105\"},\"ecreq\":false}"
