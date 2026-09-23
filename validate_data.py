@@ -87,10 +87,34 @@ out['speed'] = {'schools_in_10s': n2 - n1, 'per_school_sec': round(10 / max(1, n
 
 # ---- 5. exported files integrity ----
 try:
-    with open('schools_data.json', 'r', encoding='utf-8') as f:
-        data = json.load(f)
-    out['export_json'] = {'records': len(data), 'parse': 'OK'}
+    import pandas as pd
+    df = pd.read_parquet('schools_data.parquet')
+    out['export_parquet'] = {'records': int(df.shape[0]), 'cols': int(df.shape[1]),
+                             'raw_cols': [c for c in df.columns if c.startswith('raw_')],
+                             'parse': 'OK'}
 except Exception as e:
-    out['export_json'] = {'parse': f'FAIL: {e}'}
+    out['export_parquet'] = {'parse': f'FAIL: {e}'}
+
+try:
+    import csv as _csv
+    with open('schools_data.csv', 'r', encoding='utf-8-sig', newline='') as f:
+        rd = list(_csv.DictReader(f))
+    out['export_csv'] = {'records': len(rd),
+                         'cols': len(rd[0]) if rd else 0,
+                         'parse': 'OK'}
+    # cleaning invariants
+    num_paren = re.compile(r'\(\d+\)')
+    bad_province = sum(1 for r in rd if num_paren.search(r.get('province') or ''))
+    bad_district = sum(1 for r in rd if num_paren.search(r.get('district') or ''))
+    bad_confirm = sum(1 for r in rd if r.get('confirm_tuition') not in ('True', 'False'))
+    out['cleaning'] = {
+        'province_with_numeric_code': bad_province,
+        'district_with_numeric_code': bad_district,
+        'confirm_not_bool': bad_confirm,
+        'stage_sample': sorted({r.get('stage') for r in rd}),
+        'status_labels': sorted({r.get('process_status_label') for r in rd}),
+    }
+except Exception as e:
+    out['export_csv'] = {'parse': f'FAIL: {e}'}
 
 print(json.dumps(out, ensure_ascii=False, indent=2))

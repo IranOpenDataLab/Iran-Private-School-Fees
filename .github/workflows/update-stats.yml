@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - 'schools_data.csv'
-      - 'schools_data.json'
+      - 'schools_data.parquet'
       - 'scripts/update_readme_stats.py'
       - '.github/workflows/update-stats.yml'
   workflow_dispatch:

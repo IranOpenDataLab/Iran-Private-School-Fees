@@ -6,3 +6,6 @@ venv/
 .idea/
 .vscode/
 Thumbs.db
+
+# exploratory / one-off scripts (kept locally, not part of the pipeline)
+scratch/

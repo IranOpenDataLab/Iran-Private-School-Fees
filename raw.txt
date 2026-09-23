@@ -1,1 +1,0 @@
-"{\"log\":\"column \\\"nan\\\" does not exist\",\"IsUserLogin\":null,\"LoginUser\":{\"username\":null,\"firstName\":\"\",\"lastName\":\"\",\"ip\":\"93.118.112.105\"},\"serverMessage\":{\"text\":\"خطای پردازش\",\"type\":\"error\",\"title\":\"خطا\",\"then\":{}},\"ecreq\":false}"

@@ -5,7 +5,8 @@ Full scraper for portal.mosharekatha.ir (non-governmental schools, year 1405-140
 Phases:
   1. Collect district lists + full school lists (province -> district -> gender -> page)
   2. Collect per-school details (detail + licenses + tuition history)
-  3. Export merged data to JSON + CSV (UTF-8-BOM for Excel)
+  3. Export merged data to cleaned CSV (UTF-8-BOM for Excel) + Parquet
+     (raw_* API payloads live only in the Parquet file)
 
 Resumable: progress is checkpointed under ./checkpoint/
 Run:  python run_scraper.py [phase]     phase = list | details | export | all (default)
@@ -48,6 +49,13 @@ F_DETAILS = os.path.join(CKPT, 'details.jsonl')
 F_LOG = os.path.join(BASE, 'scraper_log.txt')
 
 GENDER_LABEL = {'1': 'پسرانه', '2': 'دخترانه'}
+
+# Real ROW stage codes are [3,5,11,12,15] (verified from the site's own
+# badges/dashboard: ابتدایی / متوسطه اول / نظری / هنرستان فنی / کاردانش).
+# The UI dropdown's enum [2,3,16,17] is a DIFFERENT mapping the backend
+# filters against row codes directly -> queries with it only ever returned
+# code '3' (ابتدایی) rows. Probe 0..99 so no future/unknown code is missed.
+WIDE_STAGE_IDS = [str(i) for i in range(0, 100)]
 
 # ------------------------------------------------------------
 # LOGGING
@@ -162,7 +170,8 @@ def phase_list():
                         fetched = 0
                         total = None
                         while True:
-                            res = get_schools(dkey, gender=gender, page=page, limit=50)
+                            res = get_schools(dkey, gender=gender, page=page, limit=50,
+                                              stage_ids=WIDE_STAGE_IDS)
                             items = res.get('items') or []
                             if total is None:
                                 try:
@@ -403,19 +412,26 @@ def phase_export():
             'raw_tuition_history': hist or None,
         })
 
-    out_json = os.path.join(BASE, 'schools_data.json')
-    with open(out_json, 'w', encoding='utf-8') as f:
-        json.dump(merged, f, ensure_ascii=False, indent=2)
+    # ---- cleaning pass (renames, province/district cleanup, confirm bool,
+    #      process/stage labels, chronological order, *_total columns) ----
+    from clean_data import clean_rows, COLUMN_ORDER
+    cleaned = clean_rows(merged)
 
-    csv_cols = [k for k in merged[0].keys() if not k.startswith('raw_')] if merged else []
+    # CSV: human/Excel friendly, no raw_* columns
     out_csv = os.path.join(BASE, 'schools_data.csv')
     with open(out_csv, 'w', encoding='utf-8-sig', newline='') as f:
-        w = csv.DictWriter(f, fieldnames=csv_cols, extrasaction='ignore')
+        w = csv.DictWriter(f, fieldnames=COLUMN_ORDER, extrasaction='ignore')
         w.writeheader()
-        for m in merged:
+        for m in cleaned:
             w.writerow(m)
 
-    log.info('Phase EXPORT: %d schools -> %s, %s', len(merged), out_json, out_csv)
+    # Parquet: full data incl. raw_* payloads (dicts serialized to JSON strings)
+    from clean_data import write_parquet
+    out_parquet = os.path.join(BASE, 'schools_data.parquet')
+    df = write_parquet(cleaned, out_parquet)
+
+    log.info('Phase EXPORT: %d schools -> %s (%d cols), %s',
+             len(cleaned), out_csv, len(COLUMN_ORDER), out_parquet)
 
 
 # ------------------------------------------------------------
