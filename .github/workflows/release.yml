@@ -1,0 +1,53 @@
+name: Publish data release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # لازم برای خواندن آخرین commit فایل داده
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build release title (Shamsi + Gregorian)
+        id: meta
+        run: |
+          TITLE=$(python -c "import sys; sys.path.insert(0, 'scripts'); import update_readme_stats as m; u = m.last_update(); print('داده مدارس غیردولتی ۱۴۰۵-۱۴۰۶ — ' + m.persian_digits(m.jalali_of(u)) + ' شمسی / ' + u + ' میلادی')")
+          echo "title=$TITLE" >> "$GITHUB_OUTPUT"
+
+      - name: Publish / refresh release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TITLE: ${{ steps.meta.outputs.title }}
+        run: |
+          if gh release view latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit latest \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "$TITLE" \
+              --notes-file RELEASE_NOTES.md \
+              --latest
+            gh release upload latest \
+              --repo "$GITHUB_REPOSITORY" \
+              --clobber \
+              schools_data.csv schools_data.parquet
+          else
+            gh release create latest \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "$TITLE" \
+              --notes-file RELEASE_NOTES.md \
+              --latest \
+              schools_data.csv schools_data.parquet
+          fi
