@@ -26,6 +26,7 @@ import json
 import re
 import sys
 import io
+from decimal import Decimal, ROUND_HALF_UP
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
@@ -116,6 +117,39 @@ COLUMN_ORDER = [
 
 # ---------------------------------------------------------------- cleaning
 
+_DIGITS = str.maketrans('۰۱۲۳۴۵۶۷۸۹', '0123456789')
+
+
+def normalize_money(v, money=True):
+    """Tidy one tuition-history cell coming from the API.
+
+    - integer strings (EN/FA digits, thousand commas) -> plain int string
+    - BigDecimal zero tails ('595297500.000000...')    -> stripped
+    - fractional MONEY ('692022770.833333...')         -> rounded to the
+      nearest rial (HALF_UP): the server stores score-formula results as
+      BigDecimal but rials have no sub-unit, and *_total must be an int
+      that equals tuition + extra_curricular as displayed
+    - fractional HOURS (money=False, extra_hour '7.5000') -> fraction only
+      trimmed ('7.5'); hours are legitimately fractional (7.5 hours)
+    - anything else (site text like «در انتظار تایید») -> unchanged
+    """
+    if not isinstance(v, str):
+        return v
+    out = v.strip()
+    s = out.translate(_DIGITS).replace(',', '')
+    m = re.fullmatch(r'(-?\d+)(?:\.(\d+))?', s)
+    if not m:
+        return out
+    frac = m.group(2)
+    if frac is None or not set(frac) - {'0'}:
+        return m.group(1)               # integer, or .000... tail
+    if money:
+        return str(int(Decimal(s).quantize(Decimal('1'),
+                                           rounding=ROUND_HALF_UP)))
+    trimmed = frac.rstrip('0')          # hours: keep '7.5', drop '12.0000'
+    return f'{m.group(1)}.{trimmed}' if trimmed else m.group(1)
+
+
 def clean_province(value):
     """2-1: "شهر تهران(11)" -> "شهر تهران" """
     if not value:
@@ -178,30 +212,49 @@ def stage_name(code):
 
 
 def _int(v):
-    """tuition cell -> int, or None when empty/non-numeric ('در انتظار تایید')."""
+    """tuition cell -> int, or None when empty/non-numeric ('در انتظار تایید').
+
+    Fractional money (server BigDecimal score results) is rounded to the
+    nearest rial, mirroring normalize_money, so *_total always equals
+    tuition + extra_curricular as displayed in the value columns."""
     if v is None or v == '':
         return None
     if isinstance(v, int):
         return v
-    s = str(v).strip()
-    s = s.translate(str.maketrans('۰۱۲۳۴۵۶۷۸۹', '0123456789')).replace(',', '')
-    if re.fullmatch(r'-?\d+', s):
-        return int(s)
-    return None
+    s = str(v).strip().translate(_DIGITS).replace(',', '')
+    m = re.fullmatch(r'(-?\d+)(?:\.(\d+))?', s)
+    if not m:
+        return None
+    frac = m.group(2)
+    if frac is not None and set(frac) - {'0'}:
+        return int(Decimal(s).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+    return int(m.group(1))
+
+
+def _blank(v):
+    return v is None or str(v).strip() == ''
 
 
 def add_totals(row):
-    """2-6: 14xx_total = 14xx_tuition + 14xx_extra_curricular (int or None)"""
+    """2-6: 14xx_total = 14xx_tuition + 14xx_extra_curricular (int or None)
+
+    Rules (verified against the UI, which sums the two money columns):
+      - both parts numeric (or one numeric + the other BLANK/absent)
+        -> sum, missing blank component counts as 0
+      - any part present but non-numeric ('در انتظار تایید') -> None,
+        because the amount is not known yet (never treat pending as 0)
+      - both blank -> None
+    """
     for y in YEAR_GROUPS:
-        tn = _int(row.get(f'{y}_tuition'))
-        en = _int(row.get(f'{y}_extra_curricular'))
-        raw_any = any((row.get(f'{y}_tuition'), row.get(f'{y}_extra_curricular')))
-        if tn is None and en is None:
+        rt = row.get(f'{y}_tuition')
+        re_ = row.get(f'{y}_extra_curricular')
+        tn, en = _int(rt), _int(re_)
+        pending = ((not _blank(rt)) and tn is None) or \
+                  ((not _blank(re_)) and en is None)
+        if pending or (_blank(rt) and _blank(re_)):
             row[f'{y}_total'] = None
-        elif raw_any:
-            row[f'{y}_total'] = (tn or 0) + (en or 0)
         else:
-            row[f'{y}_total'] = None
+            row[f'{y}_total'] = (tn or 0) + (en or 0)
     return row
 
 
@@ -223,13 +276,15 @@ def clean_row(row):
     for old, new in RENAME_MAP.items():
         if old in row:
             row[new] = row.pop(old)
-    # tuition cells stay as-is (digits or site text like «در انتظار تایید»);
-    # only normalize blanks to None so Parquet gets clean nulls
+    # tuition money cells: strip BigDecimal zero tails and round sub-rial
+    # fractions to whole rials; extra_hour keeps fractional hours ('7.5');
+    # blanks -> None, site text («در انتظار تایید») stays verbatim
     for y in YEAR_GROUPS:
         for p in list(TUITION_PARTS) + ['final_tuition']:
             k = f'{y}_{p}'
-            if k in row and (row[k] is None or str(row[k]).strip() == ''):
-                row[k] = None
+            if k in row:
+                v = normalize_money(row[k], money=(p != 'extra_hour'))
+                row[k] = None if (v is None or str(v).strip() == '') else v
     return add_totals(row)
 
 

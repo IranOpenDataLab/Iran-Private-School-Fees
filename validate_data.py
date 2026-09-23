@@ -107,10 +107,58 @@ try:
     bad_province = sum(1 for r in rd if num_paren.search(r.get('province') or ''))
     bad_district = sum(1 for r in rd if num_paren.search(r.get('district') or ''))
     bad_confirm = sum(1 for r in rd if r.get('confirm_tuition') not in ('True', 'False'))
+
+    # money sanity: money cols must be dot-free (integers / site text),
+    # extra_hour may hold fractional hours ('7.5') but no BigDecimal tails,
+    # totals == tuition + extra_curricular (blank component = 0)
+    money_cols = [f'{y}_{p}' for y in ('1403', '1404', '1405')
+                  for p in ('tuition', 'extra_curricular', 'total')]
+    money_cols.append('1405_final_tuition')
+    hour_cols = [f'{y}_extra_hour' for y in ('1403', '1404', '1405')]
+
+    def _num(s):
+        s = (s or '').strip()
+        return int(s) if re.fullmatch(r'-?\d+', s) else None
+
+    noise = bad_hour = bad_total = checked_total = 0
+    for r in rd:
+        for c in money_cols:
+            if '.' in (r.get(c) or ''):
+                noise += 1
+        for c in hour_cols:
+            hv = (r.get(c) or '').strip()
+            if '.' in hv and not re.fullmatch(r'-?\d+\.\d{1,6}', hv):
+                bad_hour += 1
+        for y in ('1403', '1404', '1405'):
+            t_raw = (r.get(f'{y}_tuition') or '').strip()
+            e_raw = (r.get(f'{y}_extra_curricular') or '').strip()
+            tot_raw = (r.get(f'{y}_total') or '').strip()
+            t, e = _num(t_raw), _num(e_raw)
+            if t is not None and e is not None:
+                checked_total += 1
+                if _num(tot_raw) != t + e:
+                    bad_total += 1
+            elif t is not None and not e_raw:
+                checked_total += 1        # tuition only -> total = tuition
+                if _num(tot_raw) != t:
+                    bad_total += 1
+            elif e is not None and not t_raw:
+                checked_total += 1        # extra only -> total = extra
+                if _num(tot_raw) != e:
+                    bad_total += 1
+            elif not t_raw and not e_raw and tot_raw:
+                bad_total += 1
+            elif ((t_raw and t is None) or (e_raw and e is None)) and tot_raw:
+                bad_total += 1            # pending text -> total must be empty
+
     out['cleaning'] = {
         'province_with_numeric_code': bad_province,
         'district_with_numeric_code': bad_district,
         'confirm_not_bool': bad_confirm,
+        'money_decimal_noise': noise,
+        'hour_bad_format': bad_hour,
+        'totals_checked': checked_total,
+        'bad_total_rows': bad_total,
         'stage_sample': sorted({r.get('stage') for r in rd}),
         'status_labels': sorted({r.get('process_status_label') for r in rd}),
     }

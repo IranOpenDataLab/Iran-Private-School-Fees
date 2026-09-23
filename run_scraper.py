@@ -322,13 +322,23 @@ def iso_to_jalali(s):
 
 
 def flatten_tuition_year(entry):
-    """Normalize a tuition-history year entry (different key names per year)."""
+    """Normalize a tuition-history year entry (different key names per year).
+
+    1403: tution / extra_curricular / extra_hour
+    1404: final_tuition / final_extra_curricular / final_extra_hour
+    1405: tuition / extracurricular / exta_hours  (site's own spellings,
+          plus an isfinal confirm token) -> feeds 1405_final_tuition
+    """
     if not entry:
         return {'tution': '', 'extra_curricular': '', 'extra_hour': ''}
     return {
-        'tution': entry.get('final_tuition') or entry.get('tution') or '',
-        'extra_curricular': entry.get('final_extra_curricular') or entry.get('extra_curricular') or '',
-        'extra_hour': entry.get('final_extra_hour') or entry.get('extra_hour') or '',
+        'tution': entry.get('final_tuition') or entry.get('tution')
+                  or entry.get('tuition') or '',
+        'extra_curricular': entry.get('final_extra_curricular')
+                  or entry.get('extra_curricular')
+                  or entry.get('extracurricular') or '',
+        'extra_hour': entry.get('final_extra_hour') or entry.get('extra_hour')
+                  or entry.get('exta_hours') or '',
     }
 
 

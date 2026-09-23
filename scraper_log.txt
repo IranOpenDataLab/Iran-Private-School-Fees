@@ -3687,3 +3687,7 @@
 17:00:23 INFO Done in 0.3 min
 17:03:18 INFO Phase EXPORT: 24648 schools -> C:\Users\Alireza\Documents\Default Project\schools_data.csv (42 cols), C:\Users\Alireza\Documents\Default Project\schools_data.parquet
 17:03:19 INFO Done in 0.2 min
+17:34:46 INFO Phase EXPORT: 24648 schools -> C:\Users\Alireza\Documents\Default Project\schools_data.csv (42 cols), C:\Users\Alireza\Documents\Default Project\schools_data.parquet
+17:34:46 INFO Done in 0.2 min
+18:07:39 INFO Phase EXPORT: 24648 schools -> C:\Users\Alireza\Documents\Default Project\schools_data.csv (42 cols), C:\Users\Alireza\Documents\Default Project\schools_data.parquet
+18:07:39 INFO Done in 0.4 min
