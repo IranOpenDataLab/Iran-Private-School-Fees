@@ -8,10 +8,12 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
 <link rel="stylesheet" href="assets/style.css">
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<script>if(!window.echarts){document.write('<script src="https://unpkg.com/echarts@5.5.1/dist/echarts.min.js"></scr'+'ipt>')}</script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
+<script>if(!window.Fuse){document.write('<script src="https://unpkg.com/fuse.js@7.0.0/dist/fuse.min.js"></scr'+'ipt>')}</script>
 <script src="assets/common.js"></script>
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"Dataset","name":"شهریه مدارس غیردولتی ایران (نمایشی ۱۴۰۵)",
+{"@context":"https://schema.org","@type":"Dataset","name":"شهریه مدارس غیردولتی ایران (آخرین شهریه ثبت‌شده)",
 "description":"آمار شهریه ۲۴٬۶۴۸ مدرسه غیردولتی در ۳۲ استان و ۵۵۸ ناحیه؛ مقادیر ۱۴۰۵، در نبود آن ۱۴۰۴",
 "inLanguage":"fa","distribution":[
 {"@type":"DataDownload","contentUrl":"https://github.com/IranOpenDataLab/Iran-Private-School-Fees/releases/download/latest/schools_data.csv","encodingFormat":"text/csv"},
@@ -20,11 +22,11 @@
 </head>
 <body>
 <nav class="topnav"><div class="navin">
-<a href="./">🏠 خانه</a><a href="network/">🕸️ گراف شبکه</a><a href="#search">🔎 جست‌وجو</a><a href="#top">🏆 گران‌ترین‌ها</a><a href="#y1405">✅ ثبت‌شده‌های ۱۴۰۵</a><a href="#provs">🗺️ استان‌ها</a>
+<a href="./">🏠 خانه</a><a href="network/">🕸️ گراف شبکه</a><a href="#search">🔎 جست‌وجو</a><a href="#top">🏆 گران‌ترین‌ها</a><a href="#y1405">✅ ثبت‌شده‌های ۱۴۰۵</a><a href="#provs">🗺️ استان‌ها</a><a href="methodology.html">📖 روش‌شناسی</a>
 </div></nav>
 <header class="top">
 <h1>🏫 داشبورد شهریه مدارس غیردولتی ایران</h1>
-<p class="sub" id="updLine">مقادیر ۱۴۰۵؛ هرجا ۱۴۰۵ ثبت نشده، عدد ۱۴۰۴ با برچسب ریز (۱۴۰۴) می‌آید · واحد ریال</p>
+<p class="sub" id="updLine">آخرین شهریه ثبت‌شده هر مدرسه (۱۴۰۵، وگرنه ۱۴۰۴) · واحد ریال · <a href="methodology.html">روش‌شناسی ←</a></p>
 </header>
 <main>
 <section class="cards" id="kpis" aria-label="شاخص‌های ملی"></section>
@@ -32,17 +34,19 @@
 <section id="extremes">
 <h2>🔥 سقف و کف شهریه هر مقطع (برای پروفایل کلیک کنید)</h2>
 <div class="tblwrap"><table id="tblExt"><thead><tr><th>مقطع</th><th>ارزان‌ترین (غیرتهران)</th><th>گران‌ترین (غیرتهران)</th><th>ارزان‌ترین تهران</th><th>گران‌ترین تهران</th></tr></thead><tbody></tbody></table></div>
-<p class="legend">تهران = شهر تهران + شهرستان‌های تهران. مقادیر نمایشی (۱۴۰۵، وگرنه ۱۴۰۴).</p>
+<p class="legend">تهران = شهر تهران + شهرستان‌های تهران. «آخرین شهریه ثبت‌شده» یعنی ۱۴۰۵، وگرنه ۱۴۰۴.</p>
 </section>
 
 <section>
 <h2>📈 روند میانه شهریه به تفکیک مقطع (۱۴۰۳–۱۴۰۵)</h2>
+<div class="tbar"><button class="ghost" type="button" data-png="chTrend">⬇ PNG</button> <button class="ghost" type="button" data-full="chTrend">🔍 تمام‌صفحه</button></div>
 <div id="chTrend" class="chart" role="img" aria-label="نمودار روند"></div>
 <p class="legend" id="covNote"></p>
 </section>
 
 <section>
-<h2>⚖️ مقایسه جنسیت به تفکیک مقطع (میانه نمایشی)</h2>
+<h2>⚖️ مقایسه جنسیت به تفکیک مقطع (میانه آخرین شهریه ثبت‌شده)</h2>
+<div class="tbar"><button class="ghost" type="button" data-png="chGender">⬇ PNG</button> <button class="ghost" type="button" data-full="chGender">🔍 تمام‌صفحه</button></div>
 <div id="chGender" class="chart" role="img" aria-label="نمودار جنسیت"></div>
 </section>
 
@@ -55,7 +59,7 @@
 <h2>🔎 جست‌وجوی مدرسه (همه ۲۴٬۶۴۸ مدرسه)</h2>
 <input type="search" id="q" placeholder="نام مدرسه… (حداقل ۲ حرف)" autocomplete="off" aria-label="جست‌وجوی مدرسه">
 <ul id="searchRes" hidden></ul>
-<p class="legend">جست‌وجو روی دستگاه شما انجام می‌شود؛ ایندکس فقط با اولین جست‌وجو دانلود می‌شود.</p>
+<p class="legend">جست‌وجو روی دستگاه شما انجام می‌شود؛ ایندکس فقط با اولین جست‌وجو دانلود و بعد در حافظه مرورگر می‌ماند.</p>
 </section>
 
 <section id="top">
@@ -65,12 +69,12 @@
 <select id="stageSel" aria-label="انتخاب مقطع"><option value="">— همه مقاطع —</option></select>
 <button class="ghost" id="dlCsv" type="button">⬇ دانلود CSV نمای فعلی</button>
 </div>
-<div class="tblwrap"><table id="tblTop"><thead><tr><th>#</th><th>مدرسه</th><th>استان/ناحیه</th><th>مقطع</th><th>مجموع</th></tr></thead><tbody></tbody></table></div>
+<div class="tblwrap"><table id="tblTop"><thead><tr><th>#</th><th>مدرسه</th><th>استان/ناحیه</th><th>مقطع</th><th>آخرین شهریه</th></tr></thead><tbody></tbody></table></div>
 </section>
 
 <section id="y1405">
 <h2>✅ مدارسی که شهریه ۱۴۰۵ برایشان ثبت شده (<span id="n1405">…</span> مدرسه)</h2>
-<button id="load1405" type="button">نمایش فهرست (∼۳ مگابایت دانلود می‌شود)</button>
+<button id="load1405" type="button">نمایش فهرست (∼۳ مگابایت، فقط بار اول دانلود می‌شود)</button>
 <div class="progress" id="p1405wrap" hidden><i id="p1405"></i></div>
 <p class="legend" id="p1405pct"></p>
 <div class="tblwrap" id="t1405wrap" hidden><table id="tbl1405"><thead><tr><th>#</th><th>مدرسه</th><th>استان/ناحیه</th><th>مقطع</th><th>مجموع ۱۴۰۵</th></tr></thead><tbody></tbody></table></div>
@@ -84,17 +88,19 @@
 
 <section id="provs">
 <h2>🗺️ ورود به استان‌ها (۳۲ استان)</h2>
+<div class="tbar"><button class="ghost" type="button" data-png="chProv">⬇ PNG</button> <button class="ghost" type="button" data-full="chProv">🔍 تمام‌صفحه</button></div>
 <div id="chProv" class="chart tall" role="img" aria-label="نمودار استانی"></div>
-<div class="tblwrap"><table id="tblProv"><thead><tr><th>استان</th><th>مدارس</th><th>میانه نمایشی</th><th></th></tr></thead><tbody></tbody></table></div>
+<div class="tblwrap"><table id="tblProv"><thead><tr><th>استان</th><th>مدارس</th><th>میانه آخرین شهریه</th><th></th></tr></thead><tbody></tbody></table></div>
 </section>
 </main>
-<footer class="foot">نسخه زنده داشبورد: <a href="https://iranopendatalab.github.io/Iran-Private-School-Fees">https://iranopendatalab.github.io/Iran-Private-School-Fees</a> · داده: <a href="https://github.com/IranOpenDataLab/Iran-Private-School-Fees">Iran-Private-School-Fees</a> · <a href="https://github.com/IranOpenDataLab/Iran-Private-School-Fees/releases">Releases</a> · نمودارها ECharts، جست‌وجو Fuse.js</footer>
+<footer class="foot">نسخه زنده داشبورد: <a href="https://iranopendatalab.github.io/Iran-Private-School-Fees">https://iranopendatalab.github.io/Iran-Private-School-Fees</a> · داده: <a href="https://github.com/IranOpenDataLab/Iran-Private-School-Fees">Iran-Private-School-Fees</a> · <a href="https://github.com/IranOpenDataLab/Iran-Private-School-Fees/releases">Releases</a> · <a href="methodology.html">روش‌شناسی</a> · نمودارها ECharts، جست‌وجو Fuse.js</footer>
 <noscript><p style="padding:0 16px">این داشبورد برای نمایش نمودارها به جاوااسکریپت نیاز دارد؛ داده‌های خام در <a href="data/">data/</a> در دسترس‌اند.</p></noscript>
 <script>
 (function () {
   'use strict';
   const D = window.DSH;
-  const { faNum, faYear, normFa, debounce, getJSON, fetchProgress, profileModal, downloadCSV, FONT } = D;
+  const { faNum, faYear, normFa, debounce, fetchCached, profileModal, downloadCSV, registerChart, FONT } = D;
+  const getJSON = (u) => fetchCached(u);
   const charts = [];
   function mkChart(id, opt) {
     opt.textStyle = opt.textStyle || { fontFamily: FONT };
@@ -102,16 +108,16 @@
     const c = echarts.init(el);
     c.setOption(opt);
     charts.push(c);
+    registerChart(id, c, opt);
     return c;
   }
   addEventListener('resize', () => charts.forEach((c) => c.resize()));
   const axFa = { formatter: (v) => faNum(v) };
   const yearTag = (y) => y === 1405 ? '' : ' <small>(' + faYear(y || '—') + ')</small>';
-  const cell = (r) => faNum(r.dt) + yearTag(r.dy);
   const rowsById = {};
-  function linkRow(r, extra) {
+  function linkRow(r) {
     rowsById[r.id] = r;
-    return '<a href="#" data-sid="' + r.id + '">' + (r.n || r.school_name) + '</a>' + (extra || '');
+    return '<a href="#" data-sid="' + r.id + '">' + (r.n || r.school_name) + '</a>';
   }
   document.addEventListener('click', (ev) => {
     const a = ev.target.closest('a[data-sid]');
@@ -127,24 +133,25 @@
     getJSON('data/stage-province.json'), getJSON('data/extremes.json'),
     getJSON('data/top.json'),
   ]).then(([nat, tss, prov, sg, sp, ext, top]) => {
-    document.getElementById('updLine').textContent =
-      'مقادیر ۱۴۰۵ (در نبود ۱۴۰۵: ۱۴۰۴) · واحد ریال · آخرین به‌روزرسانی داده: ' + nat.updated;
+    document.getElementById('updLine').innerHTML =
+      'آخرین شهریه ثبت‌شده هر مدرسه (۱۴۰۵، وگرنه ۱۴۰۴) · واحد ریال · آخرین به‌روزرسانی داده: ' +
+      nat.updated + ' · <a href="methodology.html">روش‌شناسی ←</a>';
     const k = document.getElementById('kpis');
     const card = (b, s, w) => '<div class="card' + (w ? ' warn' : '') + '"><b>' + b + '</b><span>' + s + '</span></div>';
     k.innerHTML =
       card(faNum(nat.n_schools), 'مدرسه غیردولتی') +
       card(faNum(nat.n_provinces), 'استان') +
       card(faNum(nat.n_districts), 'ناحیه آموزشی') +
-      card(faNum(nat.median_disp), 'میانه نمایشی (ریال)') +
+      card(faNum(nat.median_disp), 'میانه آخرین شهریه ثبت‌شده (ریال)') +
       card(faNum(nat.n_with_1405), 'ثبت‌شده ۱۴۰۵') +
       card(faNum(Math.round(nat.coverage_1405 * 100)) + '٪', 'پوشش ۱۴۰۵', nat.coverage_1405_warning);
     if (nat.quarantined && nat.quarantined.length) {
-      k.innerHTML += card(faNum(nat.quarantined.length), 'مقدار نامعتبر کنارگذاشته‌شده', true);
+      k.innerHTML += card(faNum(nat.quarantined.length), 'مقدار نامعتبر کنارگذاشته‌شده (<a href="methodology.html">چرا؟</a>)', true);
     }
     document.getElementById('n1405').textContent = faNum(nat.n_with_1405);
     document.getElementById('covNote').textContent =
       'پوشش ۱۴۰۵: ' + faNum(Math.round(nat.coverage_1405 * 100)) +
-      '٪ — چون فرایند ابلاغ ادامه دارد، هرجا ۱۴۰۵ نیست عدد ۱۴۰۴ با برچسب (۱۴۰۴) می‌آید.';
+      '٪ — هرجا ۱۴۰۵ نیست عدد ۱۴۰۴ با برچسب (۱۴۰۴) می‌آید.';
 
     // ---- extremes
     const extCell = (r) => r ? linkRow(r) + '<br><b>' + faNum(r.dt) + '</b>' + yearTag(r.dy) +
@@ -180,24 +187,28 @@
       grid: { containLabel: true },
     });
 
-    // ---- per-stage province panels
+    // ---- per-stage province panels (tall + scrollable + fullscreen)
     const grid = document.getElementById('stageGrid');
     sp.forEach((s, si) => {
+      const cid = 'chS' + si;
       const div = document.createElement('div');
       div.innerHTML = '<h3 style="margin:0 0 4px">' + s.stage +
         ' <small>(' + faNum(s.n_schools) + ' مدرسه)</small></h3>' +
-        '<div class="chart" id="chS' + si + '"></div>' +
-        '<p class="legend">کمترین: ' + (s.provinces.length && minMaxTxt(s, 'min')) +
+        '<div class="tbar"><button class="ghost" type="button" data-png="' + cid + '">⬇ PNG</button> ' +
+        '<button class="ghost" type="button" data-full="' + cid + '">🔍 تمام‌صفحه</button></div>' +
+        '<div class="chart stagetall" id="' + cid + '"></div>' +
+        '<p class="legend">کمترین: ' + minMaxTxt(s, 'min') +
         ' · بیشترین: ' + minMaxTxt(s, 'max') + '</p>';
       grid.appendChild(div);
       const rows = [...s.provinces].sort((a, b) => (b.median || 0) - (a.median || 0));
-      mkChart('chS' + si, {
+      mkChart(cid, {
         tooltip: { trigger: 'item', valueFormatter: (v) => faNum(v) + ' ریال' },
         xAxis: { type: 'value', axisLabel: axFa },
         yAxis: { type: 'category', data: rows.map((r) => r.province) },
         series: [{ type: 'bar', data: rows.map((r) => r.median || 0),
           itemStyle: { color: '#1a7f5a' } }],
         grid: { containLabel: true },
+        dataZoom: [{ type: 'slider', yAxisIndex: 0, start: 0, end: 55 }],
       });
     });
     function minMaxTxt(s, which) {
@@ -278,7 +289,7 @@
       '<div class="card warn"><b>خطا</b><span>بارگذاری داده ناموفق بود (' + e.message + ')</span></div>';
   });
 
-  // ---- registered-1405 browser (lazy, progress, paginated)
+  // ---- registered-1405 browser (lazy, progress, cached, paginated)
   const PAGE = 50;
   let r1405 = [], pg = 0;
   function render1405() {
@@ -294,7 +305,7 @@
   document.getElementById('load1405').addEventListener('click', async (ev) => {
     ev.target.disabled = true;
     document.getElementById('p1405wrap').hidden = false;
-    const d = await fetchProgress('data/schools-1405.json', (p) => {
+    const d = await fetchCached('data/schools-1405.json', (p) => {
       document.getElementById('p1405').style.width = p + '%';
       document.getElementById('p1405pct').textContent = 'دانلود: ' + faNum(p) + '٪';
     });
@@ -303,7 +314,7 @@
     render1405();
     document.getElementById('t1405wrap').hidden = false;
     document.getElementById('pg1405').hidden = false;
-    document.getElementById('p1405pct').textContent = 'کامل شد: ' + faNum(r1405.length) + ' مدرسه';
+    document.getElementById('p1405pct').textContent = 'کامل شد: ' + faNum(r1405.length) + ' مدرسه (در حافظه مرورگر ذخیره شد)';
   });
   document.getElementById('prev1405').addEventListener('click', () => { if (pg > 0) { pg--; render1405(); } });
   document.getElementById('next1405').addEventListener('click', () => { pg++; render1405(); });
@@ -314,14 +325,13 @@
     })));
   });
 
-  // ---- search (lazy index, Fuse, fa/ar unified)
+  // ---- search (lazy index, cached, Fuse, fa/ar unified)
   let fuse = null;
   async function ensureIndex() {
     if (fuse) return;
-    const idx = await getJSON('data/search-index.json');
+    const idx = await fetchCached('data/search-index.json');
     idx.forEach((r) => { rowsById[r.id] = r; });
     fuse = new Fuse(idx, { keys: ['n', 'nn'], threshold: 0.35, ignoreLocation: true });
-    window._idx = idx;
   }
   const q = document.getElementById('q'), res = document.getElementById('searchRes');
   q.addEventListener('input', debounce(async () => {

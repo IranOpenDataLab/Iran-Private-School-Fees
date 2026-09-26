@@ -680,7 +680,7 @@ def main():
 
     with io.open(os.path.join(DOCS, '.nojekyll'), 'w', encoding='utf-8') as f:
         f.write('')
-    sitemap_urls = (['', 'network/'] +
+    sitemap_urls = (['', 'network/', 'methodology.html'] +
                     [f'provinces/{s}.html' for s in sorted(prov_pages)] +
                     [f'districts/{s}.html' for s in sorted(dist_pages)])
     sm = ['<?xml version="1.0" encoding="UTF-8"?>',
@@ -709,8 +709,12 @@ def main():
 
 FONT_CSS = ('<link rel="stylesheet" '
             'href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">')
-ECHARTS_JS = ('<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js">'
-              '</script>')
+ECHARTS_JS = ('<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>\n'
+              '<script>if(!window.echarts){document.write(\'<script src="'
+              'https://unpkg.com/echarts@5.5.1/dist/echarts.min.js"></scr\'+\'ipt>\')}</script>')
+FUSE_JS = ('<script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>\n'
+           '<script>if(!window.Fuse){document.write(\'<script src="'
+           'https://unpkg.com/fuse.js@7.0.0/dist/fuse.min.js"></scr\'+\'ipt>\')}</script>')
 
 
 def nav_html(home):
@@ -723,6 +727,7 @@ def nav_html(home):
         f'<a href="{home}#top">🏆 گران‌ترین‌ها</a>'
         f'<a href="{home}#y1405">✅ ثبت‌شده‌های ۱۴۰۵</a>'
         f'<a href="{home}#provs">🗺️ استان‌ها</a>'
+        f'<a href="{home}methodology.html">📖 روش‌شناسی</a>'
         f'</div></nav>')
 
 
@@ -763,7 +768,12 @@ __NAV__
 <header class="top"><h1>__H1__</h1><p class="sub">__SUB__</p></header>
 <main>
 <section class="cards">__CARDS__</section>
-<section><h2>میانه شهریه (۱۴۰۵، در نبود ۱۴۰۵: ۱۴۰۴) به تفکیک ناحیه — ریال</h2><div id="chart" class="chart"></div></section>
+<section><h2>میانه آخرین شهریه ثبت‌شده به تفکیک ناحیه — ریال</h2>
+<div class="row" style="margin-bottom:8px"><div>
+<button class="ghost" type="button" data-png="chart">⬇ خروجی PNG</button>
+<button class="ghost" type="button" data-full="chart">🔍 تمام‌صفحه</button>
+</div></div>
+<div id="chart" class="chart"></div></section>
 <section><h2>نواحی (__NDIST__ ناحیه — برای جزییات هر ناحیه کلیک کنید)</h2><div class="tblwrap"><table><thead><tr><th>ناحیه</th><th>مدارس</th><th>میانه</th></tr></thead><tbody>__DROWS__</tbody></table></div></section>
 <section><h2>۱۰ مدرسه گران استان (برای پروفایل کلیک کنید)</h2><div class="tblwrap"><table id="topTbl"><thead><tr><th>#</th><th>مدرسه</th><th>ناحیه</th><th>مقطع</th><th>مجموع</th></tr></thead><tbody>__TROWS__</tbody></table></div></section>
 </main>
@@ -791,11 +801,18 @@ __NAV__
 <header class="top"><h1>__H1__</h1><p class="sub">__SUB__</p></header>
 <main>
 <section class="cards">__CARDS__</section>
+<section><h2>۱۵ مدرسه گران ناحیه — ریال</h2>
+<div class="row" style="margin-bottom:8px"><div>
+<button class="ghost" type="button" data-png="chart">⬇ خروجی PNG</button>
+<button class="ghost" type="button" data-full="chart">🔍 تمام‌صفحه</button>
+</div></div>
+<div id="chart" class="chart"></div></section>
 <section><h2>۲۰ مدرسه گران ناحیه (برای پروفایل کلیک کنید)</h2><div class="tblwrap"><table id="topTbl"><thead><tr><th>#</th><th>مدرسه</th><th>مقطع</th><th>مجموع</th></tr></thead><tbody>__TROWS__</tbody></table></div></section>
 <section><h2>همه مدارس ناحیه (__N__ مدرسه — برای پروفایل کلیک کنید)</h2><div class="tblwrap"><table id="allTbl"><thead><tr><th>#</th><th>مدرسه</th><th>مقطع</th><th>جنسیت</th><th>مجموع</th></tr></thead><tbody>__AROWS__</tbody></table></div></section>
 </main>
 __FOOT__
 <script>__DATAJS__</script>
+<script>__CHARTJS__</script>
 </body>
 </html>
 """
@@ -830,7 +847,7 @@ def province_page(p, slug, pdata, ptop):
     med = quantiles(vals)[1] if vals else None
     cards = (f'<div class="card"><b>{fa_num(pdata["n_schools"])}</b><span>مدرسه</span></div>'
              f'<div class="card"><b>{fa_num(pdata["n_districts"])}</b><span>ناحیه</span></div>'
-             f'<div class="card"><b>{fa_num(med)}</b><span>میانه شهریه نمایشی (ریال)</span></div>'
+             f'<div class="card"><b>{fa_num(med)}</b><span>میانه آخرین شهریه ثبت‌شده (ریال)</span></div>'
              f'<div class="card"><b>{fa_num(pdata.get("n_with_1405", 0))}</b><span>ثبت‌شده ۱۴۰۵</span></div>')
     drows = ''.join(
         f'<tr><td><a href="../districts/{d["slug"]}.html">{d["district"]}</a></td>'
@@ -846,13 +863,14 @@ def province_page(p, slug, pdata, ptop):
     meds = [d['median_disp'] or 0 for d in pdata['districts']]
     datajs = clickable_rows_js(top[:10])
     chartjs = ('var el=document.getElementById("chart");var c=echarts.init(el);'
-               'c.setOption({textStyle:{fontFamily:"Vazirmatn,Tahoma,sans-serif"},'
+               'var OPT={textStyle:{fontFamily:"Vazirmatn,Tahoma,sans-serif"},'
                'tooltip:{trigger:"item",valueFormatter:function(v){return DSH.faNum(v)+" ریال"}},'
                'xAxis:{type:"value",axisLabel:{formatter:function(v){return DSH.faNum(v)}}},'
                'yAxis:{type:"category",data:'
                + json.dumps(names, ensure_ascii=False) +
                '},series:[{type:"bar",data:' + json.dumps(meds) +
-               ',itemStyle:{color:"#1a7f5a"}}],grid:{containLabel:true}});'
+               ',itemStyle:{color:"#1a7f5a"}}],grid:{containLabel:true}};'
+               'c.setOption(OPT);DSH.registerChart("chart",c,OPT);'
                'addEventListener("resize",function(){c.resize()});')
     schema = json.dumps({
         '@context': 'https://schema.org', '@type': 'Dataset',
@@ -880,7 +898,7 @@ def province_page(p, slug, pdata, ptop):
 def district_page(p, d, slug, pslug, rows, med, n1405):
     """rows: modal-ready lite dicts, priciest-first. Click any school for profile."""
     cards = (f'<div class="card"><b>{fa_num(len(rows))}</b><span>مدرسه</span></div>'
-             f'<div class="card"><b>{fa_num(med)}</b><span>میانه شهریه نمایشی (ریال)</span></div>'
+             f'<div class="card"><b>{fa_num(med)}</b><span>میانه آخرین شهریه ثبت‌شده (ریال)</span></div>'
              f'<div class="card"><b>{fa_num(n1405)}</b><span>ثبت‌شده ۱۴۰۵</span></div>')
 
     def trow(k, r):
@@ -896,6 +914,18 @@ def district_page(p, d, slug, pslug, rows, med, n1405):
         f'<td>{disp_cell(r["dt"], r["dy"])}</td></tr>'
         for k, r in enumerate(rows))
     datajs = clickable_rows_js(rows)
+    top15 = rows[:15]
+    chartjs = ('var el=document.getElementById("chart");var c=echarts.init(el);'
+               'var OPT={textStyle:{fontFamily:"Vazirmatn,Tahoma,sans-serif"},'
+               'tooltip:{trigger:"item",valueFormatter:function(v){return DSH.faNum(v)+" ریال"}},'
+               'xAxis:{type:"value",axisLabel:{formatter:function(v){return DSH.faNum(v)}}},'
+               'yAxis:{type:"category",data:'
+               + json.dumps([r['n'] for r in top15], ensure_ascii=False) +
+               '},series:[{type:"bar",data:'
+               + json.dumps([r['dt'] or 0 for r in top15]) +
+               ',itemStyle:{color:"#1a7f5a"}}],grid:{containLabel:true}};'
+               'c.setOption(OPT);DSH.registerChart("chart",c,OPT);'
+               'addEventListener("resize",function(){c.resize()});')
     return (DISTRICT_PAGE_TMPL
             .replace('__TITLE__', f'{d} ({p}) | جزییات ناحیه')
             .replace('__DESC__', f'جزییات شهریه ناحیه {d} {p}: {len(rows)} مدرسه، میانه و همه مدارس با پروفایل.')
@@ -910,6 +940,7 @@ def district_page(p, d, slug, pslug, rows, med, n1405):
             .replace('__N__', fa_num(len(rows)))
             .replace('__AROWS__', arows)
             .replace('__DATAJS__', datajs)
+            .replace('__CHARTJS__', chartjs)
             .replace('__FOOT__', foot_html()))
 
 

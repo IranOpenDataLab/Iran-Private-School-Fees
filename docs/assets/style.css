@@ -33,6 +33,9 @@ section h2{margin-top:0;font-size:1.2rem;color:var(--head1);
 .chart{width:100%;height:380px}
 .chart.tall{height:520px}
 .chart.sm{height:220px}
+.chart.stagetall{height:460px}
+.tbar{margin:-4px 0 8px}
+.tbar button{padding:4px 12px;font-size:.8rem}
 .tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
 table{width:100%;border-collapse:collapse;font-size:.9rem}
 th,td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:right;white-space:nowrap}

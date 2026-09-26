@@ -8,17 +8,25 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
 <link rel="stylesheet" href="../assets/style.css">
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<script>if(!window.echarts){document.write('<script src="https://unpkg.com/echarts@5.5.1/dist/echarts.min.js"></scr'+'ipt>')}</script>
 <script src="../assets/common.js"></script>
 </head>
 <body>
-<nav class="topnav"><div class="navin"><a href="../">🏠 خانه</a><a href="../network/">🕸️ گراف شبکه</a><a href="../#search">🔎 جست‌وجو</a><a href="../#top">🏆 گران‌ترین‌ها</a><a href="../#y1405">✅ ثبت‌شده‌های ۱۴۰۵</a><a href="../#provs">🗺️ استان‌ها</a></div></nav>
+<nav class="topnav"><div class="navin"><a href="../">🏠 خانه</a><a href="../network/">🕸️ گراف شبکه</a><a href="../#search">🔎 جست‌وجو</a><a href="../#top">🏆 گران‌ترین‌ها</a><a href="../#y1405">✅ ثبت‌شده‌های ۱۴۰۵</a><a href="../#provs">🗺️ استان‌ها</a><a href="../methodology.html">📖 روش‌شناسی</a></div></nav>
 <header class="top"><h1>📍 ناحیه اشتهارد</h1><p class="sub">استان <a href="../provinces/alborz.html">البرز</a> · ۱ مدرسه · مقادیر ۱۴۰۵، در نبود ۱۴۰۵: ۱۴۰۴</p></header>
 <main>
-<section class="cards"><div class="card"><b>۱</b><span>مدرسه</span></div><div class="card"><b>۲۹۱٬۶۶۶٬۶۶۷</b><span>میانه شهریه نمایشی (ریال)</span></div><div class="card"><b>۰</b><span>ثبت‌شده ۱۴۰۵</span></div></section>
+<section class="cards"><div class="card"><b>۱</b><span>مدرسه</span></div><div class="card"><b>۲۹۱٬۶۶۶٬۶۶۷</b><span>میانه آخرین شهریه ثبت‌شده (ریال)</span></div><div class="card"><b>۰</b><span>ثبت‌شده ۱۴۰۵</span></div></section>
+<section><h2>۱۵ مدرسه گران ناحیه — ریال</h2>
+<div class="row" style="margin-bottom:8px"><div>
+<button class="ghost" type="button" data-png="chart">⬇ خروجی PNG</button>
+<button class="ghost" type="button" data-full="chart">🔍 تمام‌صفحه</button>
+</div></div>
+<div id="chart" class="chart"></div></section>
 <section><h2>۲۰ مدرسه گران ناحیه (برای پروفایل کلیک کنید)</h2><div class="tblwrap"><table id="topTbl"><thead><tr><th>#</th><th>مدرسه</th><th>مقطع</th><th>مجموع</th></tr></thead><tbody><tr><td>۱</td><td><a href="#" data-sid="40971163">مهرآفرید</a></td><td>ابتدایی</td><td>۲۹۱٬۶۶۶٬۶۶۷ <small>(۱۴۰۴)</small></td></tr></tbody></table></div></section>
 <section><h2>همه مدارس ناحیه (۱ مدرسه — برای پروفایل کلیک کنید)</h2><div class="tblwrap"><table id="allTbl"><thead><tr><th>#</th><th>مدرسه</th><th>مقطع</th><th>جنسیت</th><th>مجموع</th></tr></thead><tbody><tr><td>۱</td><td><a href="#" data-sid="40971163">مهرآفرید</a></td><td>ابتدایی</td><td>دخترانه</td><td>۲۹۱٬۶۶۶٬۶۶۷ <small>(۱۴۰۴)</small></td></tr></tbody></table></div></section>
 </main>
 <footer class="foot">نسخه زنده داشبورد: <a href="https://iranopendatalab.github.io/Iran-Private-School-Fees">https://iranopendatalab.github.io/Iran-Private-School-Fees</a> · داده: <a href="https://github.com/IranOpenDataLab/Iran-Private-School-Fees">Iran-Private-School-Fees</a> · <a href="https://github.com/IranOpenDataLab/Iran-Private-School-Fees/releases">Releases</a></footer>
 <script>var ROWS={"40971163": {"n": "مهرآفرید", "nn": "مهرافرید", "id": "40971163", "ps": "alborz", "d": "اشتهارد", "s": "ابتدایی", "g": "دخترانه", "p": "IR2O2O5O8O85", "y3": [null, null, null], "y4": [291666667, 250000000, 41666667], "y5": [null, null, null], "fin": null, "dt": 291666667, "dy": 1404, "founder": "منصوره هورشاد"}};document.querySelectorAll("a[data-sid]").forEach(function(a){a.addEventListener("click",function(ev){ev.preventDefault();var r=ROWS[a.getAttribute("data-sid")];if(r)DSH.profileModal(r);});});</script>
+<script>var el=document.getElementById("chart");var c=echarts.init(el);var OPT={textStyle:{fontFamily:"Vazirmatn,Tahoma,sans-serif"},tooltip:{trigger:"item",valueFormatter:function(v){return DSH.faNum(v)+" ریال"}},xAxis:{type:"value",axisLabel:{formatter:function(v){return DSH.faNum(v)}}},yAxis:{type:"category",data:["مهرآفرید"]},series:[{type:"bar",data:[291666667],itemStyle:{color:"#1a7f5a"}}],grid:{containLabel:true}};c.setOption(OPT);DSH.registerChart("chart",c,OPT);addEventListener("resize",function(){c.resize()});</script>
 </body>
 </html>

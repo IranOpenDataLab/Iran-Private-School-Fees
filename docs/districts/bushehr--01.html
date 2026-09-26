@@ -8,17 +8,25 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
 <link rel="stylesheet" href="../assets/style.css">
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<script>if(!window.echarts){document.write('<script src="https://unpkg.com/echarts@5.5.1/dist/echarts.min.js"></scr'+'ipt>')}</script>
 <script src="../assets/common.js"></script>
 </head>
 <body>
-<nav class="topnav"><div class="navin"><a href="../">🏠 خانه</a><a href="../network/">🕸️ گراف شبکه</a><a href="../#search">🔎 جست‌وجو</a><a href="../#top">🏆 گران‌ترین‌ها</a><a href="../#y1405">✅ ثبت‌شده‌های ۱۴۰۵</a><a href="../#provs">🗺️ استان‌ها</a></div></nav>
+<nav class="topnav"><div class="navin"><a href="../">🏠 خانه</a><a href="../network/">🕸️ گراف شبکه</a><a href="../#search">🔎 جست‌وجو</a><a href="../#top">🏆 گران‌ترین‌ها</a><a href="../#y1405">✅ ثبت‌شده‌های ۱۴۰۵</a><a href="../#provs">🗺️ استان‌ها</a><a href="../methodology.html">📖 روش‌شناسی</a></div></nav>
 <header class="top"><h1>📍 ناحیه بندرریگ</h1><p class="sub">استان <a href="../provinces/bushehr.html">بوشهر</a> · ۳ مدرسه · مقادیر ۱۴۰۵، در نبود ۱۴۰۵: ۱۴۰۴</p></header>
 <main>
-<section class="cards"><div class="card"><b>۳</b><span>مدرسه</span></div><div class="card"><b>۳۹۱٬۴۶۸٬۰۰۰</b><span>میانه شهریه نمایشی (ریال)</span></div><div class="card"><b>۳</b><span>ثبت‌شده ۱۴۰۵</span></div></section>
+<section class="cards"><div class="card"><b>۳</b><span>مدرسه</span></div><div class="card"><b>۳۹۱٬۴۶۸٬۰۰۰</b><span>میانه آخرین شهریه ثبت‌شده (ریال)</span></div><div class="card"><b>۳</b><span>ثبت‌شده ۱۴۰۵</span></div></section>
+<section><h2>۱۵ مدرسه گران ناحیه — ریال</h2>
+<div class="row" style="margin-bottom:8px"><div>
+<button class="ghost" type="button" data-png="chart">⬇ خروجی PNG</button>
+<button class="ghost" type="button" data-full="chart">🔍 تمام‌صفحه</button>
+</div></div>
+<div id="chart" class="chart"></div></section>
 <section><h2>۲۰ مدرسه گران ناحیه (برای پروفایل کلیک کنید)</h2><div class="tblwrap"><table id="topTbl"><thead><tr><th>#</th><th>مدرسه</th><th>مقطع</th><th>مجموع</th></tr></thead><tbody><tr><td>۱</td><td><a href="#" data-sid="96068237">حضرت زینب(س)</a></td><td>متوسطه دوره اول</td><td>۳۹۲٬۰۵۷٬۰۳۲</td></tr><tr><td>۲</td><td><a href="#" data-sid="96035203">طلوع اندیشه</a></td><td>ابتدایی</td><td>۳۹۱٬۴۶۸٬۰۰۰</td></tr><tr><td>۳</td><td><a href="#" data-sid="96068162">پویا</a></td><td>ابتدایی</td><td>۳۸۶٬۱۶۶٬۹۶۸</td></tr></tbody></table></div></section>
 <section><h2>همه مدارس ناحیه (۳ مدرسه — برای پروفایل کلیک کنید)</h2><div class="tblwrap"><table id="allTbl"><thead><tr><th>#</th><th>مدرسه</th><th>مقطع</th><th>جنسیت</th><th>مجموع</th></tr></thead><tbody><tr><td>۱</td><td><a href="#" data-sid="96068237">حضرت زینب(س)</a></td><td>متوسطه دوره اول</td><td>دخترانه</td><td>۳۹۲٬۰۵۷٬۰۳۲</td></tr><tr><td>۲</td><td><a href="#" data-sid="96035203">طلوع اندیشه</a></td><td>ابتدایی</td><td>دخترانه</td><td>۳۹۱٬۴۶۸٬۰۰۰</td></tr><tr><td>۳</td><td><a href="#" data-sid="96068162">پویا</a></td><td>ابتدایی</td><td>پسرانه</td><td>۳۸۶٬۱۶۶٬۹۶۸</td></tr></tbody></table></div></section>
 </main>
 <footer class="foot">نسخه زنده داشبورد: <a href="https://iranopendatalab.github.io/Iran-Private-School-Fees">https://iranopendatalab.github.io/Iran-Private-School-Fees</a> · داده: <a href="https://github.com/IranOpenDataLab/Iran-Private-School-Fees">Iran-Private-School-Fees</a> · <a href="https://github.com/IranOpenDataLab/Iran-Private-School-Fees/releases">Releases</a></footer>
 <script>var ROWS={"96068237": {"n": "حضرت زینب(س)", "nn": "حضرت زینب س", "id": "96068237", "ps": "bushehr", "d": "بندرریگ", "s": "متوسطه دوره اول", "g": "دخترانه", "p": "IR2O2O7OcO12", "y3": [123900000, 118000000, 5900000], "y4": [249600000, 192000000, 57600000], "y5": [392057032, 326714193, 65342839], "fin": "326714193", "dt": 392057032, "dy": 1405, "founder": "صغري عبدامامي"}, "96035203": {"n": "طلوع اندیشه", "nn": "طلوع اندیشه", "id": "96035203", "ps": "bushehr", "d": "بندرریگ", "s": "ابتدایی", "g": "دخترانه", "p": "IR2O2O7OcO10", "y3": [98166667, 95000000, 3166667], "y4": [235200000, 168000000, 67200000], "y5": [391468000, 315700000, 75768000], "fin": "315700000", "dt": 391468000, "dy": 1405, "founder": "فاطمه هدايت"}, "96068162": {"n": "پویا", "nn": "پویا", "id": "96068162", "ps": "bushehr", "d": "بندرریگ", "s": "ابتدایی", "g": "پسرانه", "p": "IR2O2O7OcO11", "y3": [98166667, 95000000, 3166667], "y4": [235200000, 168000000, 67200000], "y5": [386166968, 311424974, 74741994], "fin": "311424974", "dt": 386166968, "dy": 1405, "founder": "عبدالخالق مذكوري"}};document.querySelectorAll("a[data-sid]").forEach(function(a){a.addEventListener("click",function(ev){ev.preventDefault();var r=ROWS[a.getAttribute("data-sid")];if(r)DSH.profileModal(r);});});</script>
+<script>var el=document.getElementById("chart");var c=echarts.init(el);var OPT={textStyle:{fontFamily:"Vazirmatn,Tahoma,sans-serif"},tooltip:{trigger:"item",valueFormatter:function(v){return DSH.faNum(v)+" ریال"}},xAxis:{type:"value",axisLabel:{formatter:function(v){return DSH.faNum(v)}}},yAxis:{type:"category",data:["حضرت زینب(س)", "طلوع اندیشه", "پویا"]},series:[{type:"bar",data:[392057032, 391468000, 386166968],itemStyle:{color:"#1a7f5a"}}],grid:{containLabel:true}};c.setOption(OPT);DSH.registerChart("chart",c,OPT);addEventListener("resize",function(){c.resize()});</script>
 </body>
 </html>

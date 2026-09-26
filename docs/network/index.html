@@ -8,13 +8,15 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
 <link rel="stylesheet" href="../assets/style.css">
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<script>if(!window.echarts){document.write('<script src="https://unpkg.com/echarts@5.5.1/dist/echarts.min.js"></scr'+'ipt>')}</script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
+<script>if(!window.Fuse){document.write('<script src="https://unpkg.com/fuse.js@7.0.0/dist/fuse.min.js"></scr'+'ipt>')}</script>
 <script src="../assets/common.js"></script>
 <style>#net{width:100%;height:72vh;min-height:480px}#side{max-height:72vh;overflow:auto}</style>
 </head>
 <body>
 <nav class="topnav"><div class="navin">
-<a href="../">🏠 خانه</a><a href="./">🕸️ گراف شبکه</a><a href="../#search">🔎 جست‌وجو</a><a href="../#top">🏆 گران‌ترین‌ها</a><a href="../#y1405">✅ ثبت‌شده‌های ۱۴۰۵</a><a href="../#provs">🗺️ استان‌ها</a>
+<a href="../">🏠 خانه</a><a href="./">🕸️ گراف شبکه</a><a href="../#search">🔎 جست‌وجو</a><a href="../#top">🏆 گران‌ترین‌ها</a><a href="../#y1405">✅ ثبت‌شده‌های ۱۴۰۵</a><a href="../#provs">🗺️ استان‌ها</a><a href="../methodology.html">📖 روش‌شناسی</a>
 </div></nav>
 <header class="top">
 <h1>🕸️ گراف شبکه مدارس (۲۴٬۶۴۸ مدرسه)</h1>
@@ -38,13 +40,14 @@
 <button class="ghost" id="tDist" type="button">یال ناحیه: خاموش</button>
 <button class="ghost" id="tFound" type="button">یال موسس: روشن</button>
 <button class="ghost" id="reset" type="button">بازنشانی نما</button>
+<button class="ghost" type="button" data-png="net">⬇ خروجی PNG</button>
 </div>
 </div>
 <div class="row">
 <div style="flex:3 1 480px"><div id="net" role="img" aria-label="گراف شبکه مدارس"></div></div>
 <div style="flex:1 1 220px" id="side"><h3 style="margin-top:0">📌 پنل ناحیه</h3><div id="sideBody"><p class="legend">روی یک گره ناحیه (دایره بزرگ) کلیک کنید.</p></div></div>
 </div>
-<p class="legend">اندازه گره مدرسه = ‎3 + 25·√(مجموع نمایشی / بیشینه) — رنگ = مقطع. در زوم پایین labelها مخفی‌اند؛ با اسکرول/درگ بزرگ‌نمایی کنید.</p>
+<p class="legend">اندازه گره مدرسه = ‎3 + 25·√(آخرین شهریه ثبت‌شده / بیشینه) — رنگ = مقطع. در زوم پایین labelها مخفی‌اند؛ با اسکرول/درگ بزرگ‌نمایی کنید. داده گراف بعد از اولین دانلود در حافظه مرورگر می‌ماند.</p>
 </section>
 <section id="fallback" hidden>
 <h2>جدول جایگزین</h2>
@@ -56,7 +59,8 @@
 <script>
 (function () {
   'use strict';
-  const { faNum, faYear, normFa, debounce, getJSON, fetchProgress, profileModal, FONT } = window.DSH;
+  const { faNum, faYear, normFa, debounce, getJSON, fetchCached, profileModal, registerChart, FONT } = window.DSH;
+  const fetchProgress = fetchCached;
   const TOTAL = 24648;
   const PALETTE = ['#1a7f5a', '#2a9d8f', '#e9c46a', '#e76f51', '#457b9d', '#9d4edd'];
   const HUB_COLOR = '#333333';
@@ -71,6 +75,12 @@
         (t.district || t.d) + '</td><td>' + faNum(t.dt) + yearTag(t.dy) + '</td></tr>').join('');
     }).catch(() => {});
   }
+
+  // surface runtime errors on the page itself (debuggability)
+  window.addEventListener('error', (ev) => {
+    const el = document.getElementById('ppct');
+    if (el) el.textContent = 'خطای مرورگر: ' + (ev.message || ev.type) + ' — لطفاً همین متن را گزارش کنید.';
+  });
 
   document.getElementById('loadGraph').addEventListener('click', async (ev) => {
     ev.target.disabled = true;
@@ -182,8 +192,7 @@
 
     chart.setOption({
       animation: false,
-      textStyle: { fontFamily: FONT },
-      tooltip: { trigger: 'item', confine: true,
+      textStyle: { fontFamily: FONT },      tooltip: { trigger: 'item', confine: true,
         formatter: (p) => {
           const d = p.data;
           if (d._h !== undefined) {
@@ -206,6 +215,7 @@
         progressive: 3000, emphasis: { focus: 'adjacency', lineStyle: { width: 3 } },
         label: { show: false }, edgeSymbol: ['none', 'none'] }],
     });
+    registerChart('net', chart, null);
     apply(false);
 
     chart.on('finished', () => {

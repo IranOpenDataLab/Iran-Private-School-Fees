@@ -76,7 +76,11 @@ for html in pages:
     for m in re.findall(r'(?:src|href)="https?://([^/"\s]+)[^"]*\.(?:js|css|woff2?)(?:\?[^"]*)?"', txt):
         ext_hosts.add(m)
 ok.append(f'external asset hosts: {sorted(ext_hosts)}')
-assert ext_hosts <= {'cdn.jsdelivr.net'}, ext_hosts
+assert ext_hosts <= {'cdn.jsdelivr.net', 'unpkg.com'}, ext_hosts
+
+# methodology page ships with the site
+assert os.path.exists(os.path.join(ROOT, 'docs', 'methodology.html'))
+ok.append('methodology.html present')
 
 h1 = hashlib.sha256(io.open(os.path.join(D, 'graph', 'full.json'), 'rb').read()).hexdigest()[:16]
 ok.append(f'full.json sha={h1} (compare across runs for byte-identical)')
