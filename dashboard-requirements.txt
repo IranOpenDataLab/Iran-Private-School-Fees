@@ -1,0 +1,5 @@
+# Dashboard-only requirements (additive; the scrape pipeline is untouched).
+# build_dashboard_data.py needs just these two; layout is hand-rolled
+# (circular-per-cluster), so no networkx/louvain dependency.
+pandas
+pyarrow

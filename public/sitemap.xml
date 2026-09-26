@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url><loc>{BASE_URL}</loc></url>
+<url><loc>{BASE_URL}network/</loc></url>
+<url><loc>{BASE_URL}provinces/alborz.html</loc></url>
+<url><loc>{BASE_URL}provinces/ardabil.html</loc></url>
+<url><loc>{BASE_URL}provinces/bushehr.html</loc></url>
+<url><loc>{BASE_URL}provinces/chaharmahal-bakhtiari.html</loc></url>
+<url><loc>{BASE_URL}provinces/east-azerbaijan.html</loc></url>
+<url><loc>{BASE_URL}provinces/fars.html</loc></url>
+<url><loc>{BASE_URL}provinces/gilan.html</loc></url>
+<url><loc>{BASE_URL}provinces/golestan.html</loc></url>
+<url><loc>{BASE_URL}provinces/hamedan.html</loc></url>
+<url><loc>{BASE_URL}provinces/hormozgan.html</loc></url>
+<url><loc>{BASE_URL}provinces/ilam.html</loc></url>
+<url><loc>{BASE_URL}provinces/isfahan.html</loc></url>
+<url><loc>{BASE_URL}provinces/kerman.html</loc></url>
+<url><loc>{BASE_URL}provinces/kermanshah.html</loc></url>
+<url><loc>{BASE_URL}provinces/khuzestan.html</loc></url>
+<url><loc>{BASE_URL}provinces/kohgiluyeh-boyerahmad.html</loc></url>
+<url><loc>{BASE_URL}provinces/kurdistan.html</loc></url>
+<url><loc>{BASE_URL}provinces/lorestan.html</loc></url>
+<url><loc>{BASE_URL}provinces/markazi.html</loc></url>
+<url><loc>{BASE_URL}provinces/mazandaran.html</loc></url>
+<url><loc>{BASE_URL}provinces/north-khorasan.html</loc></url>
+<url><loc>{BASE_URL}provinces/qazvin.html</loc></url>
+<url><loc>{BASE_URL}provinces/qom.html</loc></url>
+<url><loc>{BASE_URL}provinces/razavi-khorasan.html</loc></url>
+<url><loc>{BASE_URL}provinces/semnan.html</loc></url>
+<url><loc>{BASE_URL}provinces/sistan-baluchestan.html</loc></url>
+<url><loc>{BASE_URL}provinces/south-khorasan.html</loc></url>
+<url><loc>{BASE_URL}provinces/tehran-city.html</loc></url>
+<url><loc>{BASE_URL}provinces/tehran-province.html</loc></url>
+<url><loc>{BASE_URL}provinces/west-azerbaijan.html</loc></url>
+<url><loc>{BASE_URL}provinces/yazd.html</loc></url>
+<url><loc>{BASE_URL}provinces/zanjan.html</loc></url>
+</urlset>
