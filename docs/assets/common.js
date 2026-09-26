@@ -106,7 +106,7 @@
   function moneyLine(label, triple, year) {
     if (!triple) return '';
     return '<div><span>' + label + yearTag(year) + '</span><b>' +
-      faNum(triple[0]) + ' ریال</b></div>' +
+      faNum(triple[0]) + ' تومان</b></div>' +
       '<div class="sub2"><span>مصوب / فوق‌برنامه</span><span>' +
       faNum(triple[1]) + ' / ' + faNum(triple[2]) + '</span></div>';
   }
@@ -132,7 +132,7 @@
     const dt = p.dt !== undefined ? p.dt : pick(p, '1405_total', '1404_total');
     const dy = p.dy !== undefined ? p.dy : null;
     h += '<div class="money"><div><span>آخرین شهریه ثبت‌شده' + yearTag(dy === null ? 1405 : dy) +
-      '</span><b>' + faNum(dt) + ' ریال</b></div></div>';
+      '</span><b>' + faNum(dt) + ' تومان</b></div></div>';
     if (p.y5 || p.y4 || p.y3) {
       h += '<div class="money">' +
         moneyLine('مجموع ۱۴۰۵', p.y5, 1405) +
@@ -144,7 +144,7 @@
       ['1405', '1404', '1403'].forEach((y) => {
         if (p[y + '_total'] != null) {
           h += '<div class="money"><div><span>مجموع ' + faYear(y) + '</span><b>' +
-            faNum(p[y + '_total']) + ' ریال</b></div></div>';
+            faNum(p[y + '_total']) + ' تومان</b></div></div>';
         }
       });
     }
@@ -161,7 +161,7 @@
     const c = echarts.init(el);
     c.setOption({
       textStyle: { fontFamily: FONT },
-      tooltip: { trigger: 'axis', valueFormatter: (v) => faNum(v) + ' ریال' },
+      tooltip: { trigger: 'axis', valueFormatter: (v) => faNum(v) + ' تومان' },
       xAxis: { type: 'category', data: rows.map((r) => r[0]) },
       yAxis: { type: 'value', axisLabel: { formatter: (v) => faNum(v) } },
       series: [

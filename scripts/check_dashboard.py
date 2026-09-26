@@ -23,6 +23,8 @@ nat = load('national.json')
 assert nat['n_schools'] == 24648, nat
 ok.append(f"national n_schools={nat['n_schools']}")
 ok.append(f"n_with_1405={nat['n_with_1405']} quarantined={len(nat['quarantined'])}")
+assert nat.get('unit') == 'تومان', nat.get('unit')
+ok.append(f"money unit=Toman, below-minimum={nat.get('n_below_minimum')}")
 
 prov = load('by-province.json')
 assert sum(r['n_schools'] for r in prov) == 24648

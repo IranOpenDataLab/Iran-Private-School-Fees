@@ -6,6 +6,7 @@
 <title>داشبورد شهریه مدارس غیردولتی ایران (۱۴۰۵) | IranOpenDataLab</title>
 <meta name="description" content="مصورسازی شهریه ۲۴٬۶۴۸ مدرسه غیردولتی ایران با مقادیر ۱۴۰۵: سقف و کف هر مقطع، روند، مقایسه استان/مقطع/جنسیت، جست‌وجو، ۲۰۰ مدرسه گران و ثبت‌شده‌های ۱۴۰۵.">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏫</text></svg>">
 <link rel="stylesheet" href="assets/style.css">
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
 <script>if(!window.echarts){document.write('<script src="https://unpkg.com/echarts@5.5.1/dist/echarts.min.js"></scr'+'ipt>')}</script>
@@ -26,7 +27,7 @@
 </div></nav>
 <header class="top">
 <h1>🏫 داشبورد شهریه مدارس غیردولتی ایران</h1>
-<p class="sub" id="updLine">آخرین شهریه ثبت‌شده هر مدرسه (۱۴۰۵، وگرنه ۱۴۰۴) · واحد ریال · <a href="methodology.html">روش‌شناسی ←</a></p>
+<p class="sub" id="updLine">آخرین شهریه ثبت‌شده هر مدرسه (۱۴۰۵، وگرنه ۱۴۰۴) · واحد تومان · <a href="methodology.html">روش‌شناسی ←</a></p>
 </header>
 <main>
 <section class="cards" id="kpis" aria-label="شاخص‌های ملی"></section>
@@ -51,8 +52,22 @@
 </section>
 
 <section id="bystage">
-<h2>📚 میانه استانی هر مقطع + کمترین و بیشترین (برای پروفایل کلیک کنید)</h2>
-<div class="stagegrid" id="stageGrid"></div>
+<h2>📚 هر استان در هر مقطع: میانه، کمترین، بیشترین (تومان)</h2>
+<details open>
+<summary>میانه آخرین شهریه ثبت‌شده به تفکیک استان و مقطع</summary>
+<div class="tbar"><button class="ghost" type="button" id="dlMed">⬇ دانلود CSV</button></div>
+<div class="tblwrap"><table id="tblMed"><thead><tr><th>استان</th></tr></thead><tbody></tbody></table></div>
+</details>
+<details>
+<summary>کمترین شهریه هر مقطع در هر استان (برای پروفایل کلیک کنید)</summary>
+<div class="tbar"><button class="ghost" type="button" id="dlMin">⬇ دانلود CSV</button></div>
+<div class="tblwrap"><table id="tblMin"><thead><tr><th>استان</th></tr></thead><tbody></tbody></table></div>
+</details>
+<details>
+<summary>بیشترین شهریه هر مقطع در هر استان (برای پروفایل کلیک کنید)</summary>
+<div class="tbar"><button class="ghost" type="button" id="dlMax">⬇ دانلود CSV</button></div>
+<div class="tblwrap"><table id="tblMax"><thead><tr><th>استان</th></tr></thead><tbody></tbody></table></div>
+</details>
 </section>
 
 <section id="search">
@@ -88,8 +103,6 @@
 
 <section id="provs">
 <h2>🗺️ ورود به استان‌ها (۳۲ استان)</h2>
-<div class="tbar"><button class="ghost" type="button" data-png="chProv">⬇ PNG</button> <button class="ghost" type="button" data-full="chProv">🔍 تمام‌صفحه</button></div>
-<div id="chProv" class="chart tall" role="img" aria-label="نمودار استانی"></div>
 <div class="tblwrap"><table id="tblProv"><thead><tr><th>استان</th><th>مدارس</th><th>میانه آخرین شهریه</th><th></th></tr></thead><tbody></tbody></table></div>
 </section>
 </main>
@@ -134,7 +147,7 @@
     getJSON('data/top.json'),
   ]).then(([nat, tss, prov, sg, sp, ext, top]) => {
     document.getElementById('updLine').innerHTML =
-      'آخرین شهریه ثبت‌شده هر مدرسه (۱۴۰۵، وگرنه ۱۴۰۴) · واحد ریال · آخرین به‌روزرسانی داده: ' +
+      'آخرین شهریه ثبت‌شده هر مدرسه (۱۴۰۵، وگرنه ۱۴۰۴) · واحد تومان · آخرین به‌روزرسانی داده: ' +
       nat.updated + ' · <a href="methodology.html">روش‌شناسی ←</a>';
     const k = document.getElementById('kpis');
     const card = (b, s, w) => '<div class="card' + (w ? ' warn' : '') + '"><b>' + b + '</b><span>' + s + '</span></div>';
@@ -142,7 +155,7 @@
       card(faNum(nat.n_schools), 'مدرسه غیردولتی') +
       card(faNum(nat.n_provinces), 'استان') +
       card(faNum(nat.n_districts), 'ناحیه آموزشی') +
-      card(faNum(nat.median_disp), 'میانه آخرین شهریه ثبت‌شده (ریال)') +
+      card(faNum(nat.median_disp), 'میانه آخرین شهریه ثبت‌شده (تومان)') +
       card(faNum(nat.n_with_1405), 'ثبت‌شده ۱۴۰۵') +
       card(faNum(Math.round(nat.coverage_1405 * 100)) + '٪', 'پوشش ۱۴۰۵', nat.coverage_1405_warning);
     if (nat.quarantined && nat.quarantined.length) {
@@ -164,7 +177,7 @@
     // ---- trend by stage
     const years = [1403, 1404, 1405];
     mkChart('chTrend', {
-      tooltip: { trigger: 'axis', valueFormatter: (v) => faNum(v) + ' ریال' },
+      tooltip: { trigger: 'axis', valueFormatter: (v) => faNum(v) + ' تومان' },
       legend: { bottom: 0, textStyle: { fontFamily: FONT } },
       xAxis: { type: 'category', data: years.map((y) => 'سال ' + faYear(y)) },
       yAxis: { type: 'value', axisLabel: axFa },
@@ -176,7 +189,7 @@
 
     // ---- gender by stage (grouped)
     mkChart('chGender', {
-      tooltip: { trigger: 'axis', valueFormatter: (v) => faNum(v) + ' ریال' },
+      tooltip: { trigger: 'axis', valueFormatter: (v) => faNum(v) + ' تومان' },
       legend: { bottom: 0, textStyle: { fontFamily: FONT } },
       xAxis: { type: 'category', data: sg.map((r) => r.stage),
         axisLabel: { interval: 0, rotate: 18, fontSize: 11, fontFamily: FONT } },
@@ -187,42 +200,52 @@
       grid: { containLabel: true },
     });
 
-    // ---- per-stage province panels (tall + scrollable + fullscreen)
-    const grid = document.getElementById('stageGrid');
-    sp.forEach((s, si) => {
-      const cid = 'chS' + si;
-      const div = document.createElement('div');
-      div.innerHTML = '<h3 style="margin:0 0 4px">' + s.stage +
-        ' <small>(' + faNum(s.n_schools) + ' مدرسه)</small></h3>' +
-        '<div class="tbar"><button class="ghost" type="button" data-png="' + cid + '">⬇ PNG</button> ' +
-        '<button class="ghost" type="button" data-full="' + cid + '">🔍 تمام‌صفحه</button></div>' +
-        '<div class="chart stagetall" id="' + cid + '"></div>' +
-        '<p class="legend">کمترین: ' + minMaxTxt(s, 'min') +
-        ' · بیشترین: ' + minMaxTxt(s, 'max') + '</p>';
-      grid.appendChild(div);
-      const rows = [...s.provinces].sort((a, b) => (b.median || 0) - (a.median || 0));
-      mkChart(cid, {
-        tooltip: { trigger: 'item', valueFormatter: (v) => faNum(v) + ' ریال' },
-        xAxis: { type: 'value', axisLabel: axFa },
-        yAxis: { type: 'category', data: rows.map((r) => r.province) },
-        series: [{ type: 'bar', data: rows.map((r) => r.median || 0),
-          itemStyle: { color: '#1a7f5a' } }],
-        grid: { containLabel: true },
-        dataZoom: [{ type: 'slider', yAxisIndex: 0, start: 0, end: 55 }],
-      });
-    });
-    function minMaxTxt(s, which) {
-      let best = null;
-      s.provinces.forEach((r) => {
-        const e = r[which];
-        if (!e || e.dt == null) return;
-        if (!best || (which === 'min' ? e.dt < best.dt : e.dt > best.dt)) best = e;
-      });
-      if (!best) return '—';
-      rowsById[best.id] = best;
-      return '<a href="#" data-sid="' + best.id + '">' + best.n + '</a> (' +
-        faNum(best.dt) + yearTag(best.dy) + ')';
+    // ---- per-province x stage: median / min / max collapsible tables
+    const stageNames = sp.map((s) => s.stage);
+    const provNames = [...new Set(sp.flatMap((s) => s.provinces.map((r) => r.province)))].sort();
+    const cellByStageProv = {};
+    sp.forEach((s) => s.provinces.forEach((r) => { cellByStageProv[s.stage + '|' + r.province] = r; }));
+    function fillHead(tid) {
+      document.querySelector('#' + tid + ' thead tr').innerHTML =
+        '<th>استان</th>' + stageNames.map((s) => '<th>' + s + '</th>').join('');
     }
+    ['tblMed', 'tblMin', 'tblMax'].forEach(fillHead);
+    document.querySelector('#tblMed tbody').innerHTML = provNames.map((p) =>
+      '<tr><td><b>' + p + '</b></td>' + stageNames.map((s) => {
+        const c = cellByStageProv[s + '|' + p];
+        return '<td>' + (c && c.median != null ? faNum(c.median) : '—') + '</td>';
+      }).join('') + '</tr>').join('');
+    function entryCell(e) {
+      if (!e || e.dt == null) return '<td>—</td>';
+      rowsById[e.id] = e;
+      return '<td><a href="#" data-sid="' + e.id + '">' + e.n + '</a><br><b>' +
+        faNum(e.dt) + '</b>' + yearTag(e.dy) + '</td>';
+    }
+    document.querySelector('#tblMin tbody').innerHTML = provNames.map((p) =>
+      '<tr><td><b>' + p + '</b></td>' + stageNames.map((s) => {
+        const c = cellByStageProv[s + '|' + p];
+        return entryCell(c && c.min);
+      }).join('') + '</tr>').join('');
+    document.querySelector('#tblMax tbody').innerHTML = provNames.map((p) =>
+      '<tr><td><b>' + p + '</b></td>' + stageNames.map((s) => {
+        const c = cellByStageProv[s + '|' + p];
+        return entryCell(c && c.max);
+      }).join('') + '</tr>').join('');
+    function dlPivot(tid, fname, pick) {
+      const rows = provNames.map((p) => {
+        const o = { province: p };
+        stageNames.forEach((s) => {
+          const c = cellByStageProv[s + '|' + p];
+          const e = c && c[pick];
+          o[s] = e && e.dt != null ? e.dt + (e.dy === 1404 ? ' (1404)' : '') : (pick === 'median' && c && c.median != null ? c.median : '');
+        });
+        return o;
+      });
+      downloadCSV(fname, rows);
+    }
+    document.getElementById('dlMed').addEventListener('click', () => dlPivot('tblMed', 'میانه-استان-مقطع.csv', 'median'));
+    document.getElementById('dlMin').addEventListener('click', () => dlPivot('tblMin', 'کمترین-استان-مقطع.csv', 'min'));
+    document.getElementById('dlMax').addEventListener('click', () => dlPivot('tblMax', 'بیشترین-استان-مقطع.csv', 'max'));
 
     // ---- leaderboard (province + stage filters)
     const selP = document.getElementById('provSel');
@@ -265,21 +288,8 @@
       })));
     });
 
-    // ---- provinces at the bottom
+    // ---- provinces table at the bottom
     const ps = [...prov].sort((a, b) => (b.median_disp || 0) - (a.median_disp || 0));
-    const chP = mkChart('chProv', {
-      tooltip: { trigger: 'item', valueFormatter: (v) => faNum(v) + ' ریال' },
-      xAxis: { type: 'value', axisLabel: axFa },
-      yAxis: { type: 'category', data: ps.map((r) => r.province) },
-      series: [{ type: 'bar', data: ps.map((r) => r.median_disp || 0),
-        itemStyle: { color: '#1a7f5a' } }],
-      grid: { containLabel: true },
-      dataZoom: [{ type: 'slider', yAxisIndex: 0, start: 0, end: 100 }],
-    });
-    chP.on('click', (ev) => {
-      const row = ps[ev.dataIndex];
-      if (row) location.href = 'provinces/' + row.slug + '.html';
-    });
     document.querySelector('#tblProv tbody').innerHTML = ps.map((r) =>
       '<tr><td>' + r.province + '</td><td>' + faNum(r.n_schools) + '</td><td>' +
       faNum(r.median_disp) + '</td><td><a href="provinces/' + r.slug +
@@ -342,7 +352,7 @@
     res.innerHTML = hits.map((h, k) => {
       const r = h.item;
       return '<li data-k="' + k + '">' + r.n + ' <small>' + r.d + ' · ' + r.s +
-        ' · ' + faNum(r.dt) + yearTag(r.dy) + ' ریال</small></li>';
+        ' · ' + faNum(r.dt) + yearTag(r.dy) + ' تومان</small></li>';
     }).join('') || '<li>نتیجه‌ای نیست</li>';
     res.hidden = false;
     res.querySelectorAll('li[data-k]').forEach((li) =>

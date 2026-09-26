@@ -45,6 +45,11 @@ SEED = 1405  # recorded for audit; layout itself is fully deterministic (no RNG)
 # above this cap are implausible (max sane total in dataset ~= 2.7e9 Rial)
 # and are treated as missing. Every case is listed in national.json.
 MONEY_CAP = 50_000_000_000
+# Sub-minimum: totals below 10M Rial (1M Toman) mean "no real tuition recorded"
+# (0/blank artefacts) and are treated as missing in every dashboard output.
+MONEY_MIN_RIAL = 10_000_000
+# All dashboard money outputs are stored in TOMAN (Rial / 10).
+UNIT = 'تومان'
 
 # «تهران» for the extremes table = both Tehran records.
 TEHRAN = {'شهر تهران', 'شهرستان های تهران'}
@@ -279,6 +284,20 @@ def main():
         print(f'WARNING: quarantined {len(quarantined)} implausible money values '
               f'(>{MONEY_CAP}); listed in national.json')
 
+    # ---- sub-minimum totals (-> missing) + conversion Rial -> Toman
+    n_below_min = 0
+    for y in YEARS:
+        for i, v in enumerate(tot[y]):
+            if v is not None and v < MONEY_MIN_RIAL:
+                tot[y][i] = None
+                n_below_min += 1
+    toman = lambda v: None if v is None else int(round(v / 10))  # noqa: E731
+    for y in YEARS:
+        tot[y] = [toman(v) for v in tot[y]]
+        tui[y] = [toman(v) for v in tui[y]]
+        ext[y] = [toman(v) for v in ext[y]]
+    print(f'sub-minimum totals treated as missing: {n_below_min}; unit=Toman')
+
     # ---- display-year values: 1405 when available, else 1404 (+ year tag)
     disp_t, disp_tu, disp_ex, disp_y = [], [], [], []
     for i in range(n):
@@ -380,6 +399,9 @@ def main():
         'n_districts': n_hubs,
         'base_year': BASE_YEAR,
         'display_rule': '1405_total when available, else 1404_total (year tagged)',
+        'unit': UNIT,
+        'money_min_rial': MONEY_MIN_RIAL,
+        'n_below_minimum': n_below_min,
         'median_disp': bq[1],
         'q1_disp': bq[0],
         'q3_disp': bq[2],
@@ -604,7 +626,7 @@ def main():
               {'meta': {'n_schools': n, 'n_districts': n_hubs,
                         'stages': stages, 'genders': genders,
                         'gender_note': 'index into genders',
-                        'display_rule': 'totals are display-year (1405 ?? 1404); '
+                        'display_rule': 'totals are display-year (1405 ?? 1404, Toman); '
                                         'dy=null means no total in either year',
                         'school_cols': ['school_id', 'founder_hash', 'district_idx',
                                         'stage_idx', 'gender_idx', 'disp_total',
@@ -709,6 +731,9 @@ def main():
 
 FONT_CSS = ('<link rel="stylesheet" '
             'href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">')
+FAVICON = ('<link rel="icon" '
+           'href="data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' '
+           'viewBox=\'0 0 100 100\'><text y=\'.9em\' font-size=\'90\'>🏫</text></svg>">')
 ECHARTS_JS = ('<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>\n'
               '<script>if(!window.echarts){document.write(\'<script src="'
               'https://unpkg.com/echarts@5.5.1/dist/echarts.min.js"></scr\'+\'ipt>\')}</script>')
@@ -768,7 +793,7 @@ __NAV__
 <header class="top"><h1>__H1__</h1><p class="sub">__SUB__</p></header>
 <main>
 <section class="cards">__CARDS__</section>
-<section><h2>میانه آخرین شهریه ثبت‌شده به تفکیک ناحیه — ریال</h2>
+<section><h2>میانه آخرین شهریه ثبت‌شده به تفکیک ناحیه — تومان</h2>
 <div class="row" style="margin-bottom:8px"><div>
 <button class="ghost" type="button" data-png="chart">⬇ خروجی PNG</button>
 <button class="ghost" type="button" data-full="chart">🔍 تمام‌صفحه</button>
@@ -801,7 +826,7 @@ __NAV__
 <header class="top"><h1>__H1__</h1><p class="sub">__SUB__</p></header>
 <main>
 <section class="cards">__CARDS__</section>
-<section><h2>۱۵ مدرسه گران ناحیه — ریال</h2>
+<section><h2>۱۵ مدرسه گران ناحیه — تومان</h2>
 <div class="row" style="margin-bottom:8px"><div>
 <button class="ghost" type="button" data-png="chart">⬇ خروجی PNG</button>
 <button class="ghost" type="button" data-full="chart">🔍 تمام‌صفحه</button>
@@ -847,7 +872,7 @@ def province_page(p, slug, pdata, ptop):
     med = quantiles(vals)[1] if vals else None
     cards = (f'<div class="card"><b>{fa_num(pdata["n_schools"])}</b><span>مدرسه</span></div>'
              f'<div class="card"><b>{fa_num(pdata["n_districts"])}</b><span>ناحیه</span></div>'
-             f'<div class="card"><b>{fa_num(med)}</b><span>میانه آخرین شهریه ثبت‌شده (ریال)</span></div>'
+             f'<div class="card"><b>{fa_num(med)}</b><span>میانه آخرین شهریه ثبت‌شده (تومان)</span></div>'
              f'<div class="card"><b>{fa_num(pdata.get("n_with_1405", 0))}</b><span>ثبت‌شده ۱۴۰۵</span></div>')
     drows = ''.join(
         f'<tr><td><a href="../districts/{d["slug"]}.html">{d["district"]}</a></td>'
@@ -864,7 +889,7 @@ def province_page(p, slug, pdata, ptop):
     datajs = clickable_rows_js(top[:10])
     chartjs = ('var el=document.getElementById("chart");var c=echarts.init(el);'
                'var OPT={textStyle:{fontFamily:"Vazirmatn,Tahoma,sans-serif"},'
-               'tooltip:{trigger:"item",valueFormatter:function(v){return DSH.faNum(v)+" ریال"}},'
+               'tooltip:{trigger:"item",valueFormatter:function(v){return DSH.faNum(v)+" تومان"}},'
                'xAxis:{type:"value",axisLabel:{formatter:function(v){return DSH.faNum(v)}}},'
                'yAxis:{type:"category",data:'
                + json.dumps(names, ensure_ascii=False) +
@@ -880,7 +905,7 @@ def province_page(p, slug, pdata, ptop):
     return (PROVINCE_PAGE_TMPL
             .replace('__TITLE__', f'شهریه مدارس غیردولتی {p} | داشبورد')
             .replace('__DESC__', f'آمار شهریه {pdata["n_schools"]} مدرسه غیردولتی {p} به تفکیک ناحیه — میانه، گران‌ترین‌ها.')
-            .replace('__FONT__', FONT_CSS)
+            .replace('__FONT__', FONT_CSS + '\n' + FAVICON)
             .replace('__ECHARTS__', ECHARTS_JS)
             .replace('__NAV__', nav_html('../'))
             .replace('__H1__', f'🏫 شهریه مدارس غیردولتی {p}')
@@ -898,7 +923,7 @@ def province_page(p, slug, pdata, ptop):
 def district_page(p, d, slug, pslug, rows, med, n1405):
     """rows: modal-ready lite dicts, priciest-first. Click any school for profile."""
     cards = (f'<div class="card"><b>{fa_num(len(rows))}</b><span>مدرسه</span></div>'
-             f'<div class="card"><b>{fa_num(med)}</b><span>میانه آخرین شهریه ثبت‌شده (ریال)</span></div>'
+             f'<div class="card"><b>{fa_num(med)}</b><span>میانه آخرین شهریه ثبت‌شده (تومان)</span></div>'
              f'<div class="card"><b>{fa_num(n1405)}</b><span>ثبت‌شده ۱۴۰۵</span></div>')
 
     def trow(k, r):
@@ -917,7 +942,7 @@ def district_page(p, d, slug, pslug, rows, med, n1405):
     top15 = rows[:15]
     chartjs = ('var el=document.getElementById("chart");var c=echarts.init(el);'
                'var OPT={textStyle:{fontFamily:"Vazirmatn,Tahoma,sans-serif"},'
-               'tooltip:{trigger:"item",valueFormatter:function(v){return DSH.faNum(v)+" ریال"}},'
+               'tooltip:{trigger:"item",valueFormatter:function(v){return DSH.faNum(v)+" تومان"}},'
                'xAxis:{type:"value",axisLabel:{formatter:function(v){return DSH.faNum(v)}}},'
                'yAxis:{type:"category",data:'
                + json.dumps([r['n'] for r in top15], ensure_ascii=False) +
@@ -929,7 +954,7 @@ def district_page(p, d, slug, pslug, rows, med, n1405):
     return (DISTRICT_PAGE_TMPL
             .replace('__TITLE__', f'{d} ({p}) | جزییات ناحیه')
             .replace('__DESC__', f'جزییات شهریه ناحیه {d} {p}: {len(rows)} مدرسه، میانه و همه مدارس با پروفایل.')
-            .replace('__FONT__', FONT_CSS)
+            .replace('__FONT__', FONT_CSS + '\n' + FAVICON)
             .replace('__ECHARTS__', ECHARTS_JS)
             .replace('__NAV__', nav_html('../'))
             .replace('__H1__', f'📍 ناحیه {d}')
