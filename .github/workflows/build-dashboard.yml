@@ -1,13 +1,18 @@
 name: Build dashboard
 
 # Standalone, opt-in dashboard publisher. The dataset is read-only input;
-# only docs/ (the GitHub Pages source) is regenerated. No deploy step:
-# Pages serves /docs on main directly.
+# docs/ (the site) is regenerated, committed, and deployed via the official
+# Pages artifact pipeline -- keep Settings > Pages source = GitHub Actions.
 on:
   workflow_dispatch:
 
 permissions:
   contents: write
+
+# A single manual run builds docs/, commits them, AND publishes to Pages.
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   build-dashboard:
@@ -47,3 +52,22 @@ jobs:
             git commit -m "chore: rebuild dashboard docs [skip ci]"
             git push
           fi
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/
+
+  deploy:
+    needs: build-dashboard
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
