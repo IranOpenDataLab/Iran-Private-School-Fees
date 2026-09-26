@@ -10,5 +10,9 @@ Thumbs.db
 # exploratory / one-off scripts (kept locally, not part of the pipeline)
 scratch/
 
+# dashboard working docs (local only; the live site is docs/index.html + docs/data)
+docs/dashboard-spec.md
+docs/dashboard.md
+
 # obsolete pre-fix scrape output (kept locally as history, not in the repo)
 checkpoint/archive/

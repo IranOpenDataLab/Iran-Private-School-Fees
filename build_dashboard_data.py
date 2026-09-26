@@ -6,7 +6,7 @@ Input : schools_data.parquet (45 columns, 24,648 rows) -- NEVER modified.
 Output: public/data/**  +  public/provinces/*.html  +  public/sitemap.xml
         reports/founder_clusters.csv   (human-reviewable founder clusters)
 
-Rules (dashboard-spec v2):
+Additive export layer (dataset is read-only input).
   * additive only; fail-fast on missing columns (no partial output);
   * base year for ranking/sizing/links = 1404 (spec appendix B);
   * NO school is dropped from any output -- filters are display-only;
@@ -31,14 +31,23 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 PARQUET = os.path.join(ROOT, 'schools_data.parquet')
-PUBLIC = os.path.join(ROOT, 'public')
-DATA = os.path.join(PUBLIC, 'data')
+DOCS = os.path.join(ROOT, 'docs')          # GitHub Pages source (/docs on main)
+DATA = os.path.join(DOCS, 'data')
 REPORTS = os.path.join(ROOT, 'reports')
+LIVE_URL = 'https://iranopendatalab.github.io/Iran-Private-School-Fees'
 
 EXPECTED_SCHOOLS = 24648
 BASE_YEAR = 1404
 YEARS = (1403, 1404, 1405)
 SEED = 1405  # recorded for audit; layout itself is fully deterministic (no RNG)
+
+# Outlier quarantine (display/ranking only; dataset untouched): money values
+# above this cap are implausible (max sane total in dataset ~= 2.7e9 Rial)
+# and are treated as missing. Every case is listed in national.json.
+MONEY_CAP = 50_000_000_000
+
+# «تهران» for the extremes table = both Tehran records.
+TEHRAN = {'شهر تهران', 'شهرستان های تهران'}
 
 REQUIRED_COLUMNS = {
     'province', 'district', 'school_name', 'school_id', 'school_path',
@@ -254,10 +263,40 @@ def main():
     dump_json(os.path.join(DATA, 'province_slugs.json'),
               {p: slugs[p] for p in provinces})
 
-    # ---- money vectors
+    # ---- money vectors (sanitized: outlier quarantine, dataset untouched)
     tot = {y: [parse_money(v) for v in df[f'{y}_total']] for y in YEARS}
     tui = {y: [parse_money(v) for v in df[f'{y}_tuition']] for y in YEARS}
     ext = {y: [parse_money(v) for v in df[f'{y}_extra_curricular']] for y in YEARS}
+    quarantined = []
+    for y in YEARS:
+        for fld, arr in (('total', tot[y]), ('tuition', tui[y]), ('extra', ext[y])):
+            for i, v in enumerate(arr):
+                if v is not None and v > MONEY_CAP:
+                    quarantined.append({'school_id': school_id[i], 'year': y,
+                                        'field': fld, 'value': v})
+                    arr[i] = None
+    if quarantined:
+        print(f'WARNING: quarantined {len(quarantined)} implausible money values '
+              f'(>{MONEY_CAP}); listed in national.json')
+
+    # ---- display-year values: 1405 when available, else 1404 (+ year tag)
+    disp_t, disp_tu, disp_ex, disp_y = [], [], [], []
+    for i in range(n):
+        if tot[1405][i] is not None:
+            disp_t.append(tot[1405][i])
+            disp_tu.append(tui[1405][i])
+            disp_ex.append(ext[1405][i])
+            disp_y.append(1405)
+        elif tot[BASE_YEAR][i] is not None:
+            disp_t.append(tot[BASE_YEAR][i])
+            disp_tu.append(tui[BASE_YEAR][i])
+            disp_ex.append(ext[BASE_YEAR][i])
+            disp_y.append(1404)
+        else:
+            disp_t.append(None)
+            disp_tu.append(None)
+            disp_ex.append(None)
+            disp_y.append(None)
 
     # ---- founder normalization + clustering
     founder_norm = [norm_founder(v) for v in founder_raw]
@@ -331,57 +370,64 @@ def main():
     # ============================================================ outputs
     updated = dataset_updated()
 
-    base_totals = [v for v in tot[BASE_YEAR] if v is not None]
-    cov1405 = sum(1 for v in tot[1405] if v is not None) / n
-
-    def prov_of(i):
-        return province[i]
-
-    # ---- national.json
-    bq = quantiles(base_totals)
+    # ---- national.json (display-year aggregates: 1405 first, 1404 fallback)
+    disp_vals = [v for v in disp_t if v is not None]
+    bq = quantiles(disp_vals)
+    n1405 = sum(1 for v in tot[1405] if v is not None)
     national = {
         'n_schools': n,
         'n_provinces': len(provinces),
         'n_districts': n_hubs,
         'base_year': BASE_YEAR,
-        'median_total_1404': bq[1],
-        'q1_total_1404': bq[0],
-        'q3_total_1404': bq[2],
-        'mean_total_1404': r1(mean(base_totals)),
-        'n_with_1404': len(base_totals),
-        'coverage_1405': round(cov1405, 4),
-        'coverage_1405_warning': cov1405 < 0.6,
+        'display_rule': '1405_total when available, else 1404_total (year tagged)',
+        'median_disp': bq[1],
+        'q1_disp': bq[0],
+        'q3_disp': bq[2],
+        'mean_disp': r1(mean(disp_vals)),
+        'n_with_disp': len(disp_vals),
+        'n_with_1405': n1405,
+        'coverage_1405': round(n1405 / n, 4),
+        'coverage_1405_warning': (n1405 / n) < 0.6,
+        'quarantined': quarantined,
         'updated': updated,
         'seed': SEED,
     }
     dump_json(os.path.join(DATA, 'national.json'), national)
 
+    # ---- district slugs (stable, per province): {pslug}--{k:02d}
+    dist_slug = {}
+    for p in provinces:
+        names = sorted({d for (pp, d) in pairs if pp == p})
+        for k, d in enumerate(names):
+            dist_slug[(p, d)] = f'{slugs[p]}--{k:02d}'
+
     # ---- by-province.json (must sum to 24,648)
     by_province = []
     for p in provinces:
         idxs = [i for i in range(n) if province[i] == p]
-        vals = [tot[BASE_YEAR][i] for i in idxs if tot[BASE_YEAR][i] is not None]
+        vals = [disp_t[i] for i in idxs if disp_t[i] is not None]
         q = quantiles(vals)
         hubs = sorted({hub_of[i] for i in idxs})
         by_province.append({
             'province': p, 'slug': slugs[p], 'n_schools': len(idxs),
-            'n_districts': len(hubs), 'n_with_1404': len(vals),
-            'median_1404': q[1], 'q1_1404': q[0], 'q3_1404': q[2],
-            'mean_1404': r1(mean(vals)),
+            'n_districts': len(hubs), 'n_with_disp': len(vals),
+            'n_with_1405': sum(1 for i in idxs if tot[1405][i] is not None),
+            'median_disp': q[1], 'q1_disp': q[0], 'q3_disp': q[2],
+            'mean_disp': r1(mean(vals)),
         })
     assert sum(r['n_schools'] for r in by_province) == n, 'province split lost schools'
     dump_json(os.path.join(DATA, 'by-province.json'), by_province)
 
-    # ---- by-stage.json / by-gender.json
+    # ---- by-stage.json / by-gender.json (display-year)
     def slice_stats(key_series, keys):
         out = []
         for k in keys:
             idxs = [i for i in range(n) if key_series[i] == k]
-            vals = [tot[BASE_YEAR][i] for i in idxs if tot[BASE_YEAR][i] is not None]
+            vals = [disp_t[i] for i in idxs if disp_t[i] is not None]
             q = quantiles(vals)
-            out.append({'key': k, 'n_schools': len(idxs), 'n_with_1404': len(vals),
-                        'median_1404': q[1], 'q1_1404': q[0], 'q3_1404': q[2],
-                        'mean_1404': r1(mean(vals))})
+            out.append({'key': k, 'n_schools': len(idxs), 'n_with_disp': len(vals),
+                        'median_disp': q[1], 'q1_disp': q[0], 'q3_disp': q[2],
+                        'mean_disp': r1(mean(vals))})
         return out
 
     by_stage = slice_stats(stage, stages)
@@ -390,6 +436,19 @@ def main():
     by_gender = slice_stats(gender, genders)
     assert sum(r['n_schools'] for r in by_gender) == n, 'gender split lost schools'
     dump_json(os.path.join(DATA, 'by-gender.json'), by_gender)
+
+    # ---- by-stage-gender.json (gender medians inside each stage)
+    sg = []
+    for s in stages:
+        row = {'stage': s, 'genders': []}
+        for g in genders:
+            idxs = [i for i in range(n) if stage[i] == s and gender[i] == g]
+            vals = [disp_t[i] for i in idxs if disp_t[i] is not None]
+            q = quantiles(vals)
+            row['genders'].append({'gender': g, 'n': len(idxs),
+                                   'median': q[1], 'mean': r1(mean(vals))})
+        sg.append(row)
+    dump_json(os.path.join(DATA, 'by-stage-gender.json'), sg)
 
     # ---- timeseries.json
     ts = []
@@ -404,45 +463,110 @@ def main():
                    'median_tuition': quantiles(tv)[1], 'median_extra': quantiles(ev)[1]})
     dump_json(os.path.join(DATA, 'timeseries.json'), ts)
 
-    # ---- full profile builder (shared by top.json + province tops)
+    # ---- modal-ready lite entry: full history + display-year (clickable everywhere)
+    def entry(i):
+        return {'n': school_name[i], 'nn': norm_school_name(school_name[i]).lower(),
+                'id': school_id[i], 'ps': slugs[province[i]],
+                'd': district[i], 's': stage[i], 'g': gender[i],
+                'p': school_path[i],
+                'y3': [tot[1403][i], tui[1403][i], ext[1403][i]],
+                'y4': [tot[BASE_YEAR][i], tui[BASE_YEAR][i], ext[BASE_YEAR][i]],
+                'y5': [tot[1405][i], tui[1405][i], ext[1405][i]],
+                'fin': (S('1405_final_tuition')[i].strip() or None),
+                'dt': disp_t[i], 'dy': disp_y[i],
+                'founder': founder_raw[i].strip() or 'نامشخص'}
+
+    # ---- full profile builder (tops: lite + admin fields)
     def profile(i):
-        d = {'school_name': school_name[i], 'school_id': school_id[i],
-             'school_path': school_path[i], 'school_url': school_url[i],
-             'province': province[i], 'province_slug': slugs[province[i]],
-             'district': district[i], 'stage': stage[i], 'gender': gender[i],
-             'founder': founder_raw[i].strip() or 'نامشخص',
-             'license_holder': S('license_holder')[i],
-             'confirm_tuition': str(df['confirm_tuition'].iloc[i]),
-             'process_status_label': S('process_status_label')[i]}
-        for y in YEARS:
-            d[f'{y}_tuition'] = tui[y][i]
-            d[f'{y}_extra'] = ext[y][i]
-            d[f'{y}_total'] = tot[y][i]
-        d['final_1405'] = (S('1405_final_tuition')[i].strip() or None)
+        d = entry(i)
+        d.update({'school_name': school_name[i], 'school_id': school_id[i],
+                  'school_path': school_path[i], 'school_url': school_url[i],
+                  'province': province[i], 'province_slug': slugs[province[i]],
+                  'district': district[i], 'stage': stage[i], 'gender': gender[i],
+                  'license_holder': S('license_holder')[i],
+                  'confirm_tuition': str(df['confirm_tuition'].iloc[i]),
+                  'process_status_label': S('process_status_label')[i]})
         return d
 
-    order_key = lambda i: (tot[BASE_YEAR][i] is None,  # noqa: E731
-                           -(tot[BASE_YEAR][i] or 0), school_id[i])
+    # ranking = priciest first by DISPLAY total (1405 ?? 1404), nulls last
+    order_key = lambda i: (disp_t[i] is None,  # noqa: E731
+                           -(disp_t[i] or 0), school_id[i])
 
-    # ---- top.json (national top 200, base year)
+    # ---- top.json (national 200 priciest, display-year)
     top_national = sorted(range(n), key=order_key)[:200]
     dump_json(os.path.join(DATA, 'top.json'), [profile(i) for i in top_national])
 
-    # ---- provinces/{slug}.json + {slug}-top.json
+    # ---- timeseries-stage.json (per stage x year, year-native)
+    ts_stage = []
+    for s in stages:
+        idxs = [i for i in range(n) if stage[i] == s]
+        pts = []
+        for y in YEARS:
+            vals = [tot[y][i] for i in idxs if tot[y][i] is not None]
+            pts.append({'year': y, 'n': len(vals), 'median': quantiles(vals)[1]})
+        ts_stage.append({'stage': s, 'n_schools': len(idxs), 'points': pts})
+    dump_json(os.path.join(DATA, 'timeseries-stage.json'), ts_stage)
+
+    # ---- stage-province.json (per stage: provincial medians + min/max schools)
+    stage_prov = []
+    for s in stages:
+        sidx = [i for i in range(n) if stage[i] == s]
+        sprows = []
+        for p in provinces:
+            idxs = [i for i in sidx if province[i] == p]
+            if not idxs:
+                continue
+            vals = [(disp_t[i], i) for i in idxs if disp_t[i] is not None]
+            q = quantiles([v for v, _ in vals])
+            lo = min(vals)[1] if vals else None
+            hi = max(vals)[1] if vals else None
+            sprows.append({'province': p, 'slug': slugs[p], 'n': len(idxs),
+                           'median': q[1],
+                           'min': entry(lo) if lo is not None else None,
+                           'max': entry(hi) if hi is not None else None})
+        stage_prov.append({'stage': s, 'n_schools': len(sidx), 'provinces': sprows})
+    dump_json(os.path.join(DATA, 'stage-province.json'), stage_prov)
+
+    # ---- extremes.json (per stage: cheapest/priciest, rest-of-country vs Tehran)
+    extremes = []
+    for s in stages:
+        sidx = [i for i in range(n) if stage[i] == s and disp_t[i] is not None]
+        rest = [(disp_t[i], i) for i in sidx if province[i] not in TEHRAN]
+        teh = [(disp_t[i], i) for i in sidx if province[i] in TEHRAN]
+        extremes.append({
+            'stage': s, 'n': len(sidx),
+            'min_rest': entry(min(rest)[1]) if rest else None,
+            'max_rest': entry(max(rest)[1]) if rest else None,
+            'min_tehran': entry(min(teh)[1]) if teh else None,
+            'max_tehran': entry(max(teh)[1]) if teh else None,
+        })
+    dump_json(os.path.join(DATA, 'extremes.json'), extremes)
+
+    # ---- schools-1405.json (every school with a registered 1405 total)
+    idx1405 = sorted([i for i in range(n) if tot[1405][i] is not None],
+                     key=lambda i: (-tot[1405][i], school_id[i]))
+    dump_json(os.path.join(DATA, 'schools-1405.json'),
+              {'n': len(idx1405), 'schools': [entry(i) for i in idx1405]})
+    assert len(idx1405) == n1405
+
+    # ---- provinces/{slug}.json + {slug}-top.json (display-year)
     for p in provinces:
         idxs = [i for i in range(n) if province[i] == p]
         hubs = sorted({hub_of[i] for i in idxs}, key=lambda hi: pairs[hi][1])
         dist_rows = []
         for hi in hubs:
             members_hi = [i for i in idxs if hub_of[i] == hi]
-            vals = [tot[BASE_YEAR][i] for i in members_hi
-                    if tot[BASE_YEAR][i] is not None]
+            vals = [disp_t[i] for i in members_hi if disp_t[i] is not None]
             q = quantiles(vals)
-            dist_rows.append({'district': pairs[hi][1], 'n_schools': len(members_hi),
-                              'n_with_1404': len(vals), 'median_1404': q[1]})
+            dist_rows.append({'district': pairs[hi][1],
+                              'slug': dist_slug[pairs[hi]],
+                              'n_schools': len(members_hi),
+                              'n_with_disp': len(vals), 'median_disp': q[1]})
         dump_json(os.path.join(DATA, 'provinces', f'{slugs[p]}.json'),
                   {'province': p, 'slug': slugs[p], 'n_schools': len(idxs),
-                   'n_districts': len(hubs), 'districts': dist_rows})
+                   'n_districts': len(hubs),
+                   'n_with_1405': sum(1 for i in idxs if tot[1405][i] is not None),
+                   'districts': dist_rows})
         top100 = sorted(idxs, key=order_key)[:100]
         by_dist = {}
         for i in top100:
@@ -452,46 +576,43 @@ def main():
                    'top': [profile(i) for i in top100],
                    'by_district': by_dist})
 
-    # ---- search-index.json (ALL schools, light fields, normalized name)
-    search = []
-    for i in range(n):
-        search.append({'n': school_name[i], 'nn': norm_school_name(school_name[i]).lower(),
-                       'id': school_id[i], 'ps': slugs[province[i]],
-                       'd': district[i], 's': stage[i], 'g': gender[i],
-                       'p': school_path[i], 't': tot[BASE_YEAR][i],
-                       'tu': tui[BASE_YEAR][i], 'ex': ext[BASE_YEAR][i]})
+    # ---- search-index.json (ALL schools, history + display-year)
+    search = [entry(i) for i in range(n)]
     assert len(search) == n, 'search index lost schools'
     dump_json(os.path.join(DATA, 'search-index.json'), search)
 
     # ---- graph/full.json (compact parallel arrays + precomputed coords)
+    # sizing + tooltip use DISPLAY totals (1405 ?? 1404)
     name_hash = [short_hash(norm_school_name(v)) for v in school_name]
     g_districts = []
     for hi, (p, d) in enumerate(pairs):
         members_hi = members[hi]
-        vals = [tot[BASE_YEAR][i] for i in members_hi
-                if tot[BASE_YEAR][i] is not None]
+        vals = [disp_t[i] for i in members_hi if disp_t[i] is not None]
         q = quantiles(vals)
         x, y = hub_xy[hi]
-        g_districts.append([hi, d, slugs[p], x, y, len(members_hi), q[1]])
+        g_districts.append([hi, d, slugs[p], x, y, len(members_hi), q[1],
+                            dist_slug[(p, d)]])
     g_schools = []
     for i in range(n):
         x, y = sch_xy[i]
         g_schools.append([school_id[i], founder_hash[i], hub_of[i],
                           stage_idx[stage[i]], gender_idx[gender[i]],
-                          tot[BASE_YEAR][i], tui[BASE_YEAR][i], ext[BASE_YEAR][i],
+                          disp_t[i], disp_tu[i], disp_ex[i], disp_y[i],
                           name_hash[i], school_path[i], x, y])
     assert len(g_schools) == n, 'graph lost schools'
     dump_json(os.path.join(DATA, 'graph', 'full.json'),
               {'meta': {'n_schools': n, 'n_districts': n_hubs,
                         'stages': stages, 'genders': genders,
                         'gender_note': 'index into genders',
+                        'display_rule': 'totals are display-year (1405 ?? 1404); '
+                                        'dy=null means no total in either year',
                         'school_cols': ['school_id', 'founder_hash', 'district_idx',
-                                        'stage_idx', 'gender_idx', 'total_1404',
-                                        'tuition_1404', 'extra_1404', 'name_hash',
-                                        'school_path', 'x', 'y'],
+                                        'stage_idx', 'gender_idx', 'disp_total',
+                                        'disp_tuition', 'disp_extra', 'disp_year',
+                                        'name_hash', 'school_path', 'x', 'y'],
                         'district_cols': ['idx', 'name', 'province_slug', 'x', 'y',
-                                          'n_schools', 'median_1404'],
-                        'size_rule': 'school symbolSize = 3 + 25*sqrt(total_1404/max_total_1404)',
+                                          'n_schools', 'median_disp', 'slug'],
+                        'size_rule': 'school symbolSize = 3 + 25*sqrt(disp_total/max_disp)',
                         'base_year': BASE_YEAR, 'seed': SEED,
                         'updated': updated,
                         'edge_rule': 'district edges via district_idx; '
@@ -525,7 +646,7 @@ def main():
             w.writerow([h, c['display'], c['n'], len(c['provs']),
                         len(c['names']), ' | '.join(c['samples'])])
 
-    # ---- static province pages + sitemap (SEO, §4)
+    # ---- static province + district pages + sitemap (SEO, §4)
     prov_pages = []
     for p in provinces:
         slug = slugs[p]
@@ -536,19 +657,38 @@ def main():
                      encoding='utf-8') as f:
             ptop = json.load(f)
         html = province_page(p, slug, pdata, ptop)
-        out_path = os.path.join(PUBLIC, 'provinces', f'{slug}.html')
+        out_path = os.path.join(DOCS, 'provinces', f'{slug}.html')
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
         with io.open(out_path, 'w', encoding='utf-8', newline='\n') as f:
             f.write(html)
         prov_pages.append(slug)
+
+    dist_pages = []
+    for hi, (p, d) in enumerate(pairs):
+        slug = dist_slug[(p, d)]
+        ordered = sorted(members[hi], key=order_key)
+        dentries = [entry(i) for i in ordered]
+        vals = [disp_t[i] for i in ordered if disp_t[i] is not None]
+        html = district_page(p, d, slug, slugs[p], dentries,
+                             quantiles(vals)[1] if vals else None,
+                             sum(1 for i in ordered if tot[1405][i] is not None))
+        out_path = os.path.join(DOCS, 'districts', f'{slug}.html')
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        with io.open(out_path, 'w', encoding='utf-8', newline='\n') as f:
+            f.write(html)
+        dist_pages.append(slug)
+
+    with io.open(os.path.join(DOCS, '.nojekyll'), 'w', encoding='utf-8') as f:
+        f.write('')
     sitemap_urls = (['', 'network/'] +
-                    [f'provinces/{s}.html' for s in sorted(prov_pages)])
+                    [f'provinces/{s}.html' for s in sorted(prov_pages)] +
+                    [f'districts/{s}.html' for s in sorted(dist_pages)])
     sm = ['<?xml version="1.0" encoding="UTF-8"?>',
           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     for u in sitemap_urls:
-        sm.append(f'<url><loc>{{BASE_URL}}{u}</loc></url>')
+        sm.append(f'<url><loc>{LIVE_URL}/{u}</loc></url>')
     sm.append('</urlset>')
-    with io.open(os.path.join(PUBLIC, 'sitemap.xml'), 'w',
+    with io.open(os.path.join(DOCS, 'sitemap.xml'), 'w',
                  encoding='utf-8', newline='\n') as f:
         f.write('\n'.join(sm) + '\n')
 
@@ -567,6 +707,44 @@ def main():
           f'graph={len(g_schools)})')
 
 
+FONT_CSS = ('<link rel="stylesheet" '
+            'href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">')
+ECHARTS_JS = ('<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js">'
+              '</script>')
+
+
+def nav_html(home):
+    """Full top menu; home='' on index, '../' on sub-pages (sticky via CSS)."""
+    return (
+        f'<nav class="topnav"><div class="navin">'
+        f'<a href="{home or "./"}">🏠 خانه</a>'
+        f'<a href="{home}network/">🕸️ گراف شبکه</a>'
+        f'<a href="{home}#search">🔎 جست‌وجو</a>'
+        f'<a href="{home}#top">🏆 گران‌ترین‌ها</a>'
+        f'<a href="{home}#y1405">✅ ثبت‌شده‌های ۱۴۰۵</a>'
+        f'<a href="{home}#provs">🗺️ استان‌ها</a>'
+        f'</div></nav>')
+
+
+def foot_html():
+    return (
+        f'<footer class="foot">نسخه زنده داشبورد: '
+        f'<a href="{LIVE_URL}">{LIVE_URL}</a> · داده: '
+        f'<a href="https://github.com/IranOpenDataLab/Iran-Private-School-Fees">'
+        f'Iran-Private-School-Fees</a> · '
+        f'<a href="https://github.com/IranOpenDataLab/Iran-Private-School-Fees/releases">'
+        f'Releases</a></footer>')
+
+
+def year_tag(y):
+    """1405 → no tag; 1404 → tiny year note; None → tiny 'no data' note."""
+    if y == 1405:
+        return ''
+    if y == 1404:
+        return ' <small>(۱۴۰۴)</small>'
+    return ' <small>(—)</small>'
+
+
 PROVINCE_PAGE_TMPL = """<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
@@ -574,21 +752,50 @@ PROVINCE_PAGE_TMPL = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>__TITLE__</title>
 <meta name="description" content="__DESC__">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
+__FONT__
 <link rel="stylesheet" href="../assets/style.css">
-<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+__ECHARTS__
+<script src="../assets/common.js"></script>
 <script type="application/ld+json">__SCHEMA__</script>
 </head>
 <body>
-<header class="top"><a href="../">← داشبورد ملی</a><h1>__H1__</h1><p class="sub">__SUB__</p></header>
+__NAV__
+<header class="top"><h1>__H1__</h1><p class="sub">__SUB__</p></header>
 <main>
 <section class="cards">__CARDS__</section>
-<section><h2>میانه شهریه ۱۴۰۴ به تفکیک ناحیه (ریال)</h2><div id="chart" class="chart"></div></section>
-<section><h2>نواحی (__NDIST__ ناحیه)</h2><div class="tblwrap"><table><thead><tr><th>ناحیه</th><th>مدارس</th><th>میانه ۱۴۰۴</th></tr></thead><tbody>__DROWS__</tbody></table></div></section>
-<section><h2>۱۰ مدرسه برتر استان (شهریه ۱۴۰۴)</h2><div class="tblwrap"><table><thead><tr><th>#</th><th>مدرسه</th><th>ناحیه</th><th>مقطع</th><th>مجموع ۱۴۰۴</th></tr></thead><tbody>__TROWS__</tbody></table></div></section>
+<section><h2>میانه شهریه (۱۴۰۵، در نبود ۱۴۰۵: ۱۴۰۴) به تفکیک ناحیه — ریال</h2><div id="chart" class="chart"></div></section>
+<section><h2>نواحی (__NDIST__ ناحیه — برای جزییات هر ناحیه کلیک کنید)</h2><div class="tblwrap"><table><thead><tr><th>ناحیه</th><th>مدارس</th><th>میانه</th></tr></thead><tbody>__DROWS__</tbody></table></div></section>
+<section><h2>۱۰ مدرسه گران استان (برای پروفایل کلیک کنید)</h2><div class="tblwrap"><table id="topTbl"><thead><tr><th>#</th><th>مدرسه</th><th>ناحیه</th><th>مقطع</th><th>مجموع</th></tr></thead><tbody>__TROWS__</tbody></table></div></section>
 </main>
-<footer class="foot"><a href="../">داشبورد ملی</a> · <a href="../network/">گراف شبکه مدارس</a></footer>
+__FOOT__
+<script>__DATAJS__</script>
 <script>__CHARTJS__</script>
+</body>
+</html>
+"""
+
+DISTRICT_PAGE_TMPL = """<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<meta name="description" content="__DESC__">
+__FONT__
+<link rel="stylesheet" href="../assets/style.css">
+__ECHARTS__
+<script src="../assets/common.js"></script>
+</head>
+<body>
+__NAV__
+<header class="top"><h1>__H1__</h1><p class="sub">__SUB__</p></header>
+<main>
+<section class="cards">__CARDS__</section>
+<section><h2>۲۰ مدرسه گران ناحیه (برای پروفایل کلیک کنید)</h2><div class="tblwrap"><table id="topTbl"><thead><tr><th>#</th><th>مدرسه</th><th>مقطع</th><th>مجموع</th></tr></thead><tbody>__TROWS__</tbody></table></div></section>
+<section><h2>همه مدارس ناحیه (__N__ مدرسه — برای پروفایل کلیک کنید)</h2><div class="tblwrap"><table id="allTbl"><thead><tr><th>#</th><th>مدرسه</th><th>مقطع</th><th>جنسیت</th><th>مجموع</th></tr></thead><tbody>__AROWS__</tbody></table></div></section>
+</main>
+__FOOT__
+<script>__DATAJS__</script>
 </body>
 </html>
 """
@@ -603,46 +810,107 @@ def fa_num(x):
     return s.translate(str.maketrans('0123456789', '۰۱۲۳۴۵۶۷۸۹'))
 
 
+def disp_cell(total, year):
+    return f'{fa_num(total)}{year_tag(year)}'
+
+
+def clickable_rows_js(rows):
+    """Embed modal-ready rows + click-to-profile wiring for a table."""
+    by_id = {r['id']: r for r in rows}
+    js = ('var ROWS=' + json.dumps(by_id, ensure_ascii=False) + ';'
+          'document.querySelectorAll("a[data-sid]").forEach(function(a){'
+          'a.addEventListener("click",function(ev){ev.preventDefault();'
+          'var r=ROWS[a.getAttribute("data-sid")];if(r)DSH.profileModal(r);});});')
+    return js
+
+
 def province_page(p, slug, pdata, ptop):
     top = ptop['top']
-    vals = [t['1404_total'] for t in top if t.get('1404_total') is not None]
+    vals = [t['dt'] for t in top if t.get('dt') is not None]
     med = quantiles(vals)[1] if vals else None
     cards = (f'<div class="card"><b>{fa_num(pdata["n_schools"])}</b><span>مدرسه</span></div>'
              f'<div class="card"><b>{fa_num(pdata["n_districts"])}</b><span>ناحیه</span></div>'
-             f'<div class="card"><b>{fa_num(med)}</b><span>میانه شهریه ۱۴۰۴ (ریال)</span></div>')
+             f'<div class="card"><b>{fa_num(med)}</b><span>میانه شهریه نمایشی (ریال)</span></div>'
+             f'<div class="card"><b>{fa_num(pdata.get("n_with_1405", 0))}</b><span>ثبت‌شده ۱۴۰۵</span></div>')
     drows = ''.join(
-        f'<tr><td>{d["district"]}</td><td>{fa_num(d["n_schools"])}</td>'
-        f'<td>{fa_num(d["median_1404"])}</td></tr>'
+        f'<tr><td><a href="../districts/{d["slug"]}.html">{d["district"]}</a></td>'
+        f'<td>{fa_num(d["n_schools"])}</td><td>{fa_num(d["median_disp"])}</td></tr>'
         for d in pdata['districts'])
     trows = ''.join(
-        f'<tr><td>{fa_num(k + 1)}</td><td>{t["school_name"]}</td>'
+        f'<tr><td>{fa_num(k + 1)}</td>'
+        f'<td><a href="#" data-sid="{t["school_id"]}">{t["school_name"]}</a></td>'
         f'<td>{t["district"]}</td><td>{t["stage"]}</td>'
-        f'<td>{fa_num(t.get("1404_total"))}</td></tr>'
+        f'<td>{disp_cell(t.get("dt"), t.get("dy"))}</td></tr>'
         for k, t in enumerate(top[:10]))
     names = [d['district'] for d in pdata['districts']]
-    meds = [d['median_1404'] or 0 for d in pdata['districts']]
+    meds = [d['median_disp'] or 0 for d in pdata['districts']]
+    datajs = clickable_rows_js(top[:10])
     chartjs = ('var el=document.getElementById("chart");var c=echarts.init(el);'
-               'c.setOption({xAxis:{type:"value"},yAxis:{type:"category",data:'
+               'c.setOption({textStyle:{fontFamily:"Vazirmatn,Tahoma,sans-serif"},'
+               'tooltip:{trigger:"item",valueFormatter:function(v){return DSH.faNum(v)+" ریال"}},'
+               'xAxis:{type:"value",axisLabel:{formatter:function(v){return DSH.faNum(v)}}},'
+               'yAxis:{type:"category",data:'
                + json.dumps(names, ensure_ascii=False) +
                '},series:[{type:"bar",data:' + json.dumps(meds) +
                ',itemStyle:{color:"#1a7f5a"}}],grid:{containLabel:true}});'
                'addEventListener("resize",function(){c.resize()});')
     schema = json.dumps({
         '@context': 'https://schema.org', '@type': 'Dataset',
-        'name': f'شهریه مدارس غیردولتی {p} ۱۴۰۴',
+        'name': f'شهریه مدارس غیردولتی {p} (نمایشی ۱۴۰۵)',
         'description': f'آمار شهریه {pdata["n_schools"]} مدرسه غیردولتی استان {p}',
         'inLanguage': 'fa'}, ensure_ascii=False)
     return (PROVINCE_PAGE_TMPL
-            .replace('__TITLE__', f'شهریه مدارس غیردولتی {p} | داشبورد ۱۴۰۴')
-            .replace('__DESC__', f'آمار شهریه {pdata["n_schools"]} مدرسه غیردولتی {p} به تفکیک ناحیه — میانه، top مدارس.')
+            .replace('__TITLE__', f'شهریه مدارس غیردولتی {p} | داشبورد')
+            .replace('__DESC__', f'آمار شهریه {pdata["n_schools"]} مدرسه غیردولتی {p} به تفکیک ناحیه — میانه، گران‌ترین‌ها.')
+            .replace('__FONT__', FONT_CSS)
+            .replace('__ECHARTS__', ECHARTS_JS)
+            .replace('__NAV__', nav_html('../'))
             .replace('__H1__', f'🏫 شهریه مدارس غیردولتی {p}')
-            .replace('__SUB__', f'{fa_num(pdata["n_schools"])} مدرسه · {fa_num(pdata["n_districts"])} ناحیه · سال پایه ۱۴۰۴')
+            .replace('__SUB__', f'{fa_num(pdata["n_schools"])} مدرسه · {fa_num(pdata["n_districts"])} ناحیه · مقادیر ۱۴۰۵، در نبود ۱۴۰۵: ۱۴۰۴')
             .replace('__CARDS__', cards)
             .replace('__NDIST__', fa_num(pdata['n_districts']))
             .replace('__DROWS__', drows)
             .replace('__TROWS__', trows)
+            .replace('__DATAJS__', datajs)
             .replace('__CHARTJS__', chartjs)
+            .replace('__FOOT__', foot_html())
             .replace('__SCHEMA__', schema))
+
+
+def district_page(p, d, slug, pslug, rows, med, n1405):
+    """rows: modal-ready lite dicts, priciest-first. Click any school for profile."""
+    cards = (f'<div class="card"><b>{fa_num(len(rows))}</b><span>مدرسه</span></div>'
+             f'<div class="card"><b>{fa_num(med)}</b><span>میانه شهریه نمایشی (ریال)</span></div>'
+             f'<div class="card"><b>{fa_num(n1405)}</b><span>ثبت‌شده ۱۴۰۵</span></div>')
+
+    def trow(k, r):
+        return (f'<tr><td>{fa_num(k + 1)}</td>'
+                f'<td><a href="#" data-sid="{r["id"]}">{r["n"]}</a></td>'
+                f'<td>{r["s"]}</td><td>{disp_cell(r["dt"], r["dy"])}</td></tr>')
+
+    trows = ''.join(trow(k, r) for k, r in enumerate(rows[:20]))
+    arows = ''.join(
+        f'<tr><td>{fa_num(k + 1)}</td>'
+        f'<td><a href="#" data-sid="{r["id"]}">{r["n"]}</a></td>'
+        f'<td>{r["s"]}</td><td>{r["g"]}</td>'
+        f'<td>{disp_cell(r["dt"], r["dy"])}</td></tr>'
+        for k, r in enumerate(rows))
+    datajs = clickable_rows_js(rows)
+    return (DISTRICT_PAGE_TMPL
+            .replace('__TITLE__', f'{d} ({p}) | جزییات ناحیه')
+            .replace('__DESC__', f'جزییات شهریه ناحیه {d} {p}: {len(rows)} مدرسه، میانه و همه مدارس با پروفایل.')
+            .replace('__FONT__', FONT_CSS)
+            .replace('__ECHARTS__', ECHARTS_JS)
+            .replace('__NAV__', nav_html('../'))
+            .replace('__H1__', f'📍 ناحیه {d}')
+            .replace('__SUB__', f'استان <a href="../provinces/{pslug}.html">{p}</a> · '
+                                f'{fa_num(len(rows))} مدرسه · مقادیر ۱۴۰۵، در نبود ۱۴۰۵: ۱۴۰۴')
+            .replace('__CARDS__', cards)
+            .replace('__TROWS__', trows)
+            .replace('__N__', fa_num(len(rows)))
+            .replace('__AROWS__', arows)
+            .replace('__DATAJS__', datajs)
+            .replace('__FOOT__', foot_html()))
 
 
 if __name__ == '__main__':

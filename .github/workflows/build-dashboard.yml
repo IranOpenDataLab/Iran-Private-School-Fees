@@ -1,7 +1,8 @@
 name: Build dashboard
 
-# Standalone, opt-in dashboard publisher. Does NOT touch the scrape pipeline:
-# the dataset is read-only input; no existing file is modified.
+# Standalone, opt-in dashboard publisher. The dataset is read-only input;
+# only docs/ (the GitHub Pages source) is regenerated. No deploy step:
+# Pages serves /docs on main directly.
 on:
   workflow_dispatch:
 
@@ -27,35 +28,22 @@ jobs:
 
       - name: Build dashboard data
         run: python build_dashboard_data.py
-        # fail-fast: missing column / lost school => non-zero exit, no deploy
+        # fail-fast: missing column / lost school => non-zero exit, nothing committed
 
       - name: Validate dataset untouched
         run: python validate_data.py
 
       - name: Sanity-check dashboard outputs
-        run: |
-          python - <<'EOF'
-          import json
-          d = 'public/data/'
-          nat = json.load(open(d + 'national.json'))
-          assert nat['n_schools'] == 24648, nat
-          prov = json.load(open(d + 'by-province.json'))
-          assert sum(r['n_schools'] for r in prov) == 24648
-          g = json.load(open(d + 'graph/full.json'))
-          assert g['meta']['n_schools'] == 24648 and len(g['schools']) == 24648
-          assert len(g['districts']) == 558
-          s = json.load(open(d + 'search-index.json'))
-          assert len(s) == 24648
-          ids = {x['school_id'] for x in
-                 __import__('pandas').read_parquet('schools_data.parquet')[['school_id']].to_dict('records')}
-          assert {x['id'] for x in s} == set(map(str, ids)), 'search/graph IDs diverge from dataset'
-          assert {x[0] for x in g['schools']} == set(map(str, ids)), 'graph IDs diverge from dataset'
-          print('dashboard sanity: 24648 schools in national/provinces/graph/search -- OK')
-          EOF
+        run: python scripts/check_dashboard.py
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./public
-          publish_branch: gh-pages
+      - name: Commit regenerated docs if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/
+          if git diff --cached --quiet; then
+            echo "Dashboard already up to date"
+          else
+            git commit -m "chore: rebuild dashboard docs [skip ci]"
+            git push
+          fi
