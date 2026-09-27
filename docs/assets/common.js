@@ -297,7 +297,7 @@
 
   window.DSH = {
     faNum, faYear, normFa, debounce, getJSON, fetchProgress, fetchCached,
-    openModal, closeModal, profileHTML, profileModal, schoolURL, FONT,
+    CACHE_NAME, openModal, closeModal, profileHTML, profileModal, schoolURL, FONT,
     registerChart, exportPNG, fullscreenChart, downloadCSV,
   };
 })();

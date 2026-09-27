@@ -60,8 +60,8 @@
 <script>
 (function () {
   'use strict';
-  const { faNum, faYear, normFa, debounce, getJSON, fetchCached, profileModal, registerChart, FONT } = window.DSH;
-  const fetchProgress = fetchCached;
+  const { faNum, faYear, normFa, debounce, fetchCached, profileModal, registerChart, FONT } = window.DSH;
+  const getJSON = (u) => fetchCached(u);
   const TOTAL = 24648;
   const PALETTE = ['#1a7f5a', '#2a9d8f', '#e9c46a', '#e76f51', '#457b9d', '#9d4edd'];
   const HUB_COLOR = '#333333';
@@ -83,27 +83,67 @@
     if (el) el.textContent = 'خطای مرورگر: ' + (ev.message || ev.type) + ' — لطفاً همین متن را گزارش کنید.';
   });
 
+  async function withTimeout(promise, ms, label) {
+    let timer = 0;
+    const timeout = new Promise((_, rej) => {
+      timer = setTimeout(() => rej(new Error(label)), ms);
+    });
+    try {
+      return await Promise.race([promise, timeout]);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   document.getElementById('loadGraph').addEventListener('click', async (ev) => {
-    ev.target.disabled = true;
+    const btn = ev.target;
+    btn.disabled = true;
     document.getElementById('pwrap').hidden = false;
     const t0 = performance.now();
+    const ppct = document.getElementById('ppct');
+    const say = (t) => { ppct.textContent = t; };
     let chart = null;
     try {
-      const c = document.createElement('canvas');
-      if (!c.getContext || !c.getContext('2d')) throw new Error('no canvas');
+      if (typeof echarts === 'undefined') {
+        throw new Error('کتابخانه نمودار (ECharts) لود نشد؛ CDN در دسترس نیست.');
+      }
+      say('آماده‌سازی…');
+      // let the status paint before the heavy synchronous work
+      await new Promise((r) => setTimeout(r, 30));
       chart = echarts.init(document.getElementById('net'), null, { renderer: 'canvas' });
-    } catch (e) { showFallback(e.message); return; }
+    } catch (e) { showFallback(e.message || e); return; }
     try {
-      const G = await fetchProgress('../data/graph/full.json', (p) => {
+      say('دانلود داده گراف…');
+      const G = await withTimeout(fetchCached('../data/graph/full.json', (p) => {
         document.getElementById('pbar').style.width = p + '%';
-        document.getElementById('ppct').textContent = 'دانلود داده گراف: ' + faNum(p) + '٪';
-      });
-      document.getElementById('ppct').textContent = 'ساخت گراف…';
+        say('دانلود داده گراف: ' + faNum(p) + '٪');
+      }), 150000, 'دانلود در ۱۵۰ ثانیه تمام نشد؛ اتصال خیلی کند است. دوباره تلاش کنید.');
+      say('ساخت گره‌ها…');
+      await new Promise((r) => setTimeout(r, 30));
       buildGraph(chart, G, t0);
       document.getElementById('controls').hidden = false;
-      document.getElementById('ppct').textContent = '';
-    } catch (e) { showFallback(e.message); }
+      say('');
+      btn.textContent = '⬇ بارگذاری مجدد گراف';
+    } catch (e) {
+      say('خطا: ' + (e.message || e));
+      btn.disabled = false;
+      btn.textContent = '↻ تلاش مجدد';
+    }
   });
+
+  // auto-load when the payload is already cached: no re-download, no extra click
+  (async () => {
+    try {
+      if (!('caches' in window)) return;
+      const cache = await caches.open(window.DSH.CACHE_NAME);
+      const key = new URL('../data/graph/full.json', location.href).href;
+      const hit = await cache.match(key);
+      if (hit) {
+        document.getElementById('ppct').textContent = 'داده در حافظه موجود است؛ بارگذاری خودکار…';
+        document.getElementById('loadGraph').click();
+      }
+    } catch (_) { /* ignore */ }
+  })();
 
   // school cols: [id,fh,di,si,gi,dt,dtu,dex,dy,nm,sp,x,y]; district: [idx,name,pslug,x,y,n,med,slug]
   function buildGraph(chart, G, t0) {
@@ -268,6 +308,8 @@
       const dt = ((performance.now() - t0) / 1000).toFixed(1);
       document.getElementById('counter').textContent +=
         ' · یال‌ها اضافه شد (کل: ' + faNum(dt) + ' ثانیه)';
+      // warm the search index in the background for instant school modals
+      fetchCached('../data/search-index.json').catch(() => {});
     }, 80)));
 
     // background-enrich modals with tuition history (search-index, cached)
