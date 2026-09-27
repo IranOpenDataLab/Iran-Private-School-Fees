@@ -185,14 +185,17 @@
         const nodisp = s[5] == null;
         const dim = (dimStage.has(s[3]) || dimGender.has(s[4])) ||
           (hiFounder && s[1] !== hiFounder);
-        nodes[i] = { id: 's' + s[0], name: 's' + s[0], value: [s[11], s[12]],
+        nodes[i] = { id: 's' + s[0], name: 's' + s[0],
+          // layout:'none' reads positions from x/y — NOT from value:[x,y]
+          x: s[11], y: s[12], value: [s[11], s[12]],
           symbolSize: nodisp ? 1.5 : sizeOf(s[5]), category: nodisp ? NULL_CAT : s[3],
           itemStyle: dim ? { opacity: 0.06 } : {},
           _i: i };
       }
       for (let k = 0; k < dists.length; k++) {
         const d = dists[k];
-        nodes[sch.length + k] = { id: 'h' + d[0], name: 'h' + d[0], value: [d[3], d[4]],
+        nodes[sch.length + k] = { id: 'h' + d[0], name: 'h' + d[0],
+          x: d[3], y: d[4], value: [d[3], d[4]],
           symbolSize: 13, category: HUB_CAT,
           label: { show: true, formatter: d[1], fontSize: 10, color: '#111', fontFamily: FONT },
           labelLayout: { hideOverlap: true }, _h: k };
@@ -225,23 +228,12 @@
 
     const state = { dimStage: new Set(), dimGender: new Set(), hiFounder: null,
       showDist: false, showFound: true };
-    let FIT = null;
 
-    // fit all nodes into view: explicit zoom/center from data bounds
-    // (layout:'none' has no reliable auto-fit, so never depend on defaults)
-    function computeFit(nodes) {
-      const el = document.getElementById('net');
-      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-      for (const nd of nodes) {
-        const x = nd.value[0], y = nd.value[1];
-        if (x < minX) minX = x;
-        if (x > maxX) maxX = x;
-        if (y < minY) minY = y;
-        if (y > maxY) maxY = y;
-      }
-      const W = el.clientWidth || 800, H = el.clientHeight || 500;
-      const zoom = Math.min(W / ((maxX - minX) || 1), H / ((maxY - minY) || 1)) * 0.96;
-      return { zoom, center: [(minX + maxX) / 2, (minY + maxY) / 2] };
+    // NOTE: no custom zoom/center. ECharts' default graph view (zoom 1) already
+    // fits this layout to the container; forcing a computed zoom shrank the
+    // whole graph into a tiny central blob.
+    function resetView() {
+      chart.setOption({ series: [{ zoom: 1, center: null }] });
     }
 
     function writeCounter(withLinks) {
@@ -253,6 +245,11 @@
         (nNull ? ' (' + faNum(nNull) + ' بدون شهریه ثبت‌شده، خاکستری)' : '') +
         (withLinks ? '' : ' · یال‌ها در راه‌اند…') +
         ((state.dimStage.size || state.dimGender.size) ? ' (بخشی کم‌رنگ شده با فیلتر)' : '');
+    }
+
+    function applyLinksOnly() {
+      // phase 2 / toggle path: merge links without rebuilding 25k nodes
+      chart.setOption({ series: [{ links: buildLinks(state.showDist, state.showFound) }] });
     }
 
     function apply(keepView, withLinks) {
@@ -295,22 +292,22 @@
         label: { show: false }, edgeSymbol: ['none', 'none'] }],
     });
     registerChart('net', chart, null);
-    // phase 1: nodes + explicit fit-view (fast first frame, always visible)
+    // phase 1: nodes only — a fast first frame at ECharts' default view
     const nodes0 = buildNodes(new Set(), new Set(), null);
-    FIT = computeFit(nodes0);
-    chart.setOption({ series: [{ data: nodes0, links: [],
-      zoom: FIT.zoom, center: FIT.center }] });
+    chart.setOption({ series: [{ data: nodes0, links: [] }] });
     writeCounter(false);
 
-    // phase 2: edges after the first frame is on screen (rAF, no 'finished' dependency)
-    requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(() => {
-      apply(true, true);
+    // phase 2: add edges after the first frame. setTimeout (NOT rAF): rAF does
+    // not fire in background/hidden tabs and would leave the graph edge-less.
+    setTimeout(() => {
+      applyLinksOnly();
+      writeCounter(true);
       const dt = ((performance.now() - t0) / 1000).toFixed(1);
       document.getElementById('counter').textContent +=
         ' · یال‌ها اضافه شد (کل: ' + faNum(dt) + ' ثانیه)';
       // warm the search index in the background for instant school modals
       fetchCached('../data/search-index.json').catch(() => {});
-    }, 80)));
+    }, 500);
 
     // background-enrich modals with tuition history (search-index, cached)
     let sidx = null;
@@ -371,17 +368,17 @@
     document.getElementById('tDist').onclick = (e) => {
       state.showDist = !state.showDist;
       e.target.textContent = 'یال ناحیه: ' + (state.showDist ? 'روشن' : 'خاموش');
-      apply(true);
+      applyLinksOnly(); writeCounter(true);
     };
     document.getElementById('tFound').onclick = (e) => {
       state.showFound = !state.showFound;
       e.target.textContent = 'یال موسس: ' + (state.showFound ? 'روشن' : 'خاموش');
-      apply(true);
+      applyLinksOnly(); writeCounter(true);
     };
     document.getElementById('reset').onclick = () => {
       state.dimStage.clear(); state.dimGender.clear(); state.hiFounder = null;
       chips.querySelectorAll('.chip').forEach((c) => c.classList.remove('off'));
-      chart.setOption({ series: [{ zoom: FIT ? FIT.zoom : 1, center: FIT ? FIT.center : null }] });
+      resetView();
       apply(false, true);
     };
 
