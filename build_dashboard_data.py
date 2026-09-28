@@ -335,7 +335,11 @@ def main():
     n_hubs = len(pairs)
 
     # ---- deterministic offline layout (circular-per-province + rings)
-    R_BIG = 1000.0
+    # Spacing is deliberately generous: at the default fit-to-frame zoom the
+    # whole map lands in ~450k screen pixels for ~25k schools, so anything
+    # tighter than this stacks nodes on top of each other and hides the ones
+    # underneath.
+    R_BIG = 1500.0
     prov_list = provinces  # already sorted
     prov_angle = {p: 2 * math.pi * i / len(prov_list) for i, p in enumerate(prov_list)}
     hubs_by_prov = {}
@@ -346,7 +350,7 @@ def main():
         cx = R_BIG * math.cos(prov_angle[p])
         cy = R_BIG * math.sin(prov_angle[p])
         k = len(idxs)
-        rp = 60.0 + 8.0 * math.sqrt(k)
+        rp = 90.0 + 10.0 * math.sqrt(k)
         for j, hi in enumerate(idxs):
             a = 2 * math.pi * j / k
             hub_xy[hi] = (round(cx + rp * math.cos(a), 2),
@@ -363,7 +367,9 @@ def main():
         else:
             fsum[h] = [x, y, 1]
     fcent = {h: (v[0] / v[2], v[1] / v[2]) for h, v in fsum.items()}
-    # schools on golden-angle spiral around own hub, pulled 25% to founder centroid
+    # schools on golden-angle spiral around own hub, pulled only 15% (not 25%)
+    # to the founder centroid -- a stronger pull squashes every cluster onto its
+    # own hub and buries the nodes that lie underneath
     GOLDEN = 2.399963
     members = {}
     for i in range(n):
@@ -373,12 +379,12 @@ def main():
         idxs.sort(key=lambda i: school_id[i])
         hx, hy = hub_xy[hi]
         for pos, i in enumerate(idxs):
-            r = 6.0 * math.sqrt(pos + 1)
+            r = 9.5 * math.sqrt(pos + 1)
             a = pos * GOLDEN
             rx, ry = hx + r * math.cos(a), hy + r * math.sin(a)
             cx, cy = fcent[founder_hash[i]]
-            sch_xy[i] = (round(0.75 * rx + 0.25 * cx, 2),
-                         round(0.75 * ry + 0.25 * cy, 2))
+            sch_xy[i] = (round(0.85 * rx + 0.15 * cx, 2),
+                         round(0.85 * ry + 0.15 * cy, 2))
 
     # ---- stage / gender indices (sorted -> deterministic)
     stages = sorted(stage.unique().tolist())
@@ -634,7 +640,7 @@ def main():
                                         'name_hash', 'school_path', 'x', 'y'],
                         'district_cols': ['idx', 'name', 'province_slug', 'x', 'y',
                                           'n_schools', 'median_disp', 'slug'],
-                        'size_rule': 'school symbolSize = 3 + 25*sqrt(disp_total/max_disp)',
+                        'size_rule': 'school symbolSize = 2 + 7*sqrt(disp_total/max_disp)',
                         'base_year': BASE_YEAR, 'seed': SEED,
                         'updated': updated,
                         'edge_rule': 'district edges via district_idx; '

@@ -75,9 +75,10 @@
 </div>
 <div class="row">
 <div style="flex:3 1 480px"><div id="net" role="img" aria-label="گراف شبکه مدارس"></div></div>
-<div style="flex:1 1 220px" id="side"><h3 style="margin-top:0">📌 پنل ناحیه / خوشهٔ مؤسس</h3><div id="sideBody"><p class="legend">روی یک گره ناحیه (دایره بزرگ) کلیک کنید، و روی مدرسه نگه دارید تا خوشهٔ مؤسسش را ببینید.</p></div></div>
+<div style="flex:1 1 220px" id="side"><h3 style="margin-top:0">📌 پنل ناحیه / خوشهٔ مؤسس</h3><div id="sideBody"><p class="legend">روی یک گره ناحیه (دایره بزرگ) کلیک کنید، و روی مدرسه نگه دارید تا خوشهٔ مؤسسش را اینجا ببینید. این جدول تا وقتی روی مدرسهٔ دیگری نروید باقی می‌ماند.</p></div></div>
 </div>
-<p class="legend">اندازه گره مدرسه = ‎3 + 25·√(آخرین شهریه ثبت‌شده / بیشینه) — رنگ = مقطع. <b>روی هر گره ببرید</b> تا فقط همان نقطه و خط‌های خودش روشن بماند و بقیه محو شود؛ <b>با کشیدنِ گره</b> می‌توانید آن را جابه‌جا کنید (جابه‌جایی‌ها با «بازنشانی نما» برمی‌گردد). نگه‌داشتن روی یک مدرسه، خوشهٔ همان مؤسس را در پنل کناری فهرست می‌کند و خط‌های هم‌مؤسس پررنگ‌ترند. برای دیدن فقط یک استان، منوی «تفکیک استانی» را باز کنید. داده گراف بعد از اولین دانلود در حافظه مرورگر می‌ماند.</p>
+<p class="legend"><b>هشدار دربارهٔ دادهٔ «مؤسس مشترک»:</b> در دیتاست هیچ شناسهٔ یکتای شخصی (مثل کد ملی) وجود ندارد؛ خوشه‌بندی مؤسسان صرفاً بر پایهٔ <i>نام</i> انجام می‌شود. بنابراین یک نام مشترک ممکن است به دو شخص یا دو شرکت متفاوت تعلق داشته باشد، و یک مؤسس واقعی هم اگر نامش درست ثبت نشده باشد به چند خوشهٔ جدا تقسیم شود. پس «مدارس با مؤسس یکسان» در این داشبورد یک <b>نشانهٔ احتمالی</b> است، نه رابطهٔ قطعی مالکیت. برای همین یال‌های مؤسسی در نمودار پررنگ‌تر از یال‌های ناحیه نمایش داده می‌شوند تا به‌عنوان «احتمال» خوانده شوند.</p>
+<p class="legend">اندازه گره مدرسه = ‎2 + 7·√(آخرین شهریه ثبت‌شده / بیشینه) — رنگ = مقطع. اندازه‌ها عمداً کوچک نگه داشته شده‌اند تا با ۲۵ هزار نقطه روی هم نیفتند و نودهای زیرین هم دیده شوند؛ برای دیدن ریزتر، زوم کنید. <b>روی هر گره ببرید</b> تا فقط همان نقطه و خط‌های خودش روشن بماند و بقیه محو شود؛ <b>با کشیدنِ گره</b> می‌توانید آن را جابه‌جا کنید (جابه‌جایی‌ها با «بازنشانی نما» برمی‌گردد). نگه‌داشتن روی یک مدرسه، خوشهٔ همان مؤسس را در پنل کناری فهرست می‌کند و تا وقتی روی مدرسهٔ دیگری نروید باقی می‌ماند. خط‌های هم‌مؤسس پررنگ‌تر از یال‌های ناحیه‌اند. برای دیدن فقط یک استان، منوی «تفکیک استانی» را باز کنید. داده گراف بعد از اولین دانلود در حافظه مرورگر می‌ماند.</p>
 </section>
 <section id="fallback" hidden>
 <h2>جدول جایگزین</h2>
@@ -185,7 +186,10 @@
     const stages = G.meta.stages, genders = G.meta.genders;
     const dists = G.districts, sch = G.schools;
     const maxT = Math.max(...sch.map((s) => s[5] || 0), 1);
-    const sizeOf = (t) => t ? 3 + 25 * Math.sqrt(t / maxT) : 2.5;
+    // symbolSize is in SCREEN pixels and does NOT scale with graph zoom, so it
+    // must stay small: at the default fit-to-frame view 25k dots at the old
+    // 3+25*sqrt() size covered the canvas ~7x over, burying the nodes below.
+    const sizeOf = (t) => t ? 2 + 7 * Math.sqrt(t / maxT) : 1.5;
 
     const id2i = new Map();
     sch.forEach((s, i) => id2i.set(String(s[0]), i));
@@ -272,8 +276,8 @@
         const x = p ? p[0] : d[3], y = p ? p[1] : d[4];
         nodes.push({ id: 'h' + d[0], name: 'h' + d[0],
           x, y, value: [x, y],
-          symbolSize: 15, category: HUB_CAT,
-          itemStyle: { borderColor: '#ffffff', borderWidth: 1.4,
+          symbolSize: 9, category: HUB_CAT,
+          itemStyle: { borderColor: '#ffffff', borderWidth: 1.2,
             shadowBlur: 6, shadowColor: 'rgba(0,0,0,.25)' },
           label: { show: true, formatter: d[1], fontSize: 10, color: '#111', fontFamily: FONT,
             textBorderColor: '#ffffff', textBorderWidth: 2.5 },
@@ -484,19 +488,33 @@
     // emphasis.focus) and this panel spells out the whole same-founder group.
     // Pure DOM on purpose: re-setting 25k nodes costs ~4.4s, so nothing here
     // may trigger a graph re-render.
+    // The panel deliberately does NOT clear on mouseout: moving the pointer onto
+    // the table must not make it disappear. It only changes when the pointer
+    // lands on a different node, or when the reader closes it.
     const sideBody = document.getElementById('sideBody');
     const SIDE_HINT = '<p class="legend">روی یک گره ناحیه (دایره بزرگ) کلیک کنید، ' +
-      'و روی مدرسه نگه دارید تا خوشهٔ مؤسسش را ببینید.</p>';
-    let sideOwner = null;
+      'و روی مدرسه نگه دارید تا خوشهٔ مؤسسش را اینجا ببینید. ' +
+      'این جدول تا وقتی روی مدرسهٔ دیگری نروید باقی می‌ماند.</p>';
+    const CLOSE_BTN = '<div style="text-align:left;margin-top:8px">' +
+      '<button type="button" class="ghost" id="sideClose">✕ بستن</button></div>';
+    let sideSchool = -1; // which school the panel is currently about
+
+    sideBody.addEventListener('click', (ev) => {
+      if (ev.target.closest('#sideClose')) { sideBody.innerHTML = SIDE_HINT; sideSchool = -1; }
+    });
 
     function showFounderCluster(i) {
+      if (i === sideSchool) return; // already showing this one
+      sideSchool = i;
       const s = sch[i];
+      const name = G.founders[s[1]] || '—';
       const arr = groups.get(s[1]);
       if (!arr || arr.length < 2) {
-        if (sideOwner === 'founder') { sideBody.innerHTML = SIDE_HINT; sideOwner = null; }
+        sideBody.innerHTML = '<p><b>🏫 ' + name + '</b></p>' +
+          '<p class="legend">مؤسسِ منحصربه‌فرد: هیچ مدرسهٔ دیگری با این نام ثبت نشده، ' +
+          'پس خوشهٔ مشترکی ندارد. ماوس را روی مدرسهٔ دیگری ببرید.</p>' + CLOSE_BTN;
         return;
       }
-      sideOwner = 'founder';
       const rows = arr.map((j, k) => {
         const t = sch[j];
         return '<tr' + (j === i ? ' style="background:#e3f0e9;font-weight:700"' : '') +
@@ -505,20 +523,19 @@
       }).join('');
       const strong = arr.filter((j) => sch[j][9] === s[9]).length;
       sideBody.innerHTML =
-        '<p><b>🏫 ' + (G.founders[s[1]] || '—') + '</b><br>' +
+        '<p><b>🏫 ' + name + '</b><br>' +
         faNum(arr.length) + ' مدرسه با این مؤسس' +
         (strong > 1 ? ' · ' + faNum(strong) + ' مدرسه با نام یکسان' : '') + '</p>' +
-        '<p class="legend">همین گروه روی گراف با خط پررنگ به هم وصل است.</p>' +
+        '<p class="legend">همین گروه روی گراف با خط پررنگ به هم وصل است. ' +
+        'این جدول با حرکت ماوس روی جدول غیب نمی‌شود.</p>' +
         '<div class="tblwrap"><table><thead><tr><th>#</th><th>کد</th><th>ناحیه</th>' +
-        '<th>مقطع</th><th>مجموع</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+        '<th>مقطع</th><th>مجموع</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+        CLOSE_BTN;
     }
 
     chart.on('mouseover', (p) => {
       const d = (p && p.data) || {};
       if (d._i !== undefined) showFounderCluster(d._i);
-    });
-    chart.on('mouseout', () => {
-      if (sideOwner === 'founder') { sideBody.innerHTML = SIDE_HINT; sideOwner = null; }
     });
 
     chart.on('click', async (p) => {
@@ -530,7 +547,7 @@
           return '<tr><td>' + faNum(k + 1) + '</td><td>' + s[0] + '</td><td>' +
             stages[s[3]] + '</td><td>' + faNum(s[5]) + yearTag(s[8]) + '</td></tr>';
         }).join('');
-        sideOwner = 'hub';
+        sideSchool = -1;
         document.getElementById('sideBody').innerHTML =
           '<p><b>' + h[1] + '</b> · ' + faNum(h[5]) + ' مدرسه · میانه ' + faNum(h[6]) + '</p>' +
           '<p><a href="../districts/' + h[7] + '.html">ورود به صفحه ناحیه ←</a></p>' +
