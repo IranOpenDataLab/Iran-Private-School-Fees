@@ -13,7 +13,12 @@
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
 <script>if(!window.Fuse){document.write('<script src="https://unpkg.com/fuse.js@7.0.0/dist/fuse.min.js"></scr'+'ipt>')}</script>
 <script src="../assets/common.js"></script>
-<style>#net{width:100%;height:72vh;min-height:480px}#side{max-height:72vh;overflow:auto}
+<style>#net{width:100%;height:72vh;min-height:480px;border-radius:14px;
+  background:
+    radial-gradient(120% 90% at 50% 0%,#ffffff 0%,#f2f7f5 55%,#e9f1ee 100%);
+  box-shadow:inset 0 1px 6px rgba(15,92,64,.10)}
+#net canvas{cursor:grab}
+#side{max-height:72vh;overflow:auto}
 .provdd{flex:1 1 100%}
 .provdd>summary{cursor:pointer;padding:8px 14px;border:1px solid var(--acc);
   border-radius:999px;background:#fff;color:var(--acc-d);font-weight:700}
@@ -70,9 +75,9 @@
 </div>
 <div class="row">
 <div style="flex:3 1 480px"><div id="net" role="img" aria-label="گراف شبکه مدارس"></div></div>
-<div style="flex:1 1 220px" id="side"><h3 style="margin-top:0">📌 پنل ناحیه</h3><div id="sideBody"><p class="legend">روی یک گره ناحیه (دایره بزرگ) کلیک کنید.</p></div></div>
+<div style="flex:1 1 220px" id="side"><h3 style="margin-top:0">📌 پنل ناحیه / خوشهٔ مؤسس</h3><div id="sideBody"><p class="legend">روی یک گره ناحیه (دایره بزرگ) کلیک کنید، و روی مدرسه نگه دارید تا خوشهٔ مؤسسش را ببینید.</p></div></div>
 </div>
-<p class="legend">اندازه گره مدرسه = ‎3 + 25·√(آخرین شهریه ثبت‌شده / بیشینه) — رنگ = مقطع. برای دیدن فقط یک استان، منوی «تفکیک استانی» را باز کنید. در زوم پایین labelها مخفی‌اند؛ با اسکرول/درگ بزرگ‌نمایی کنید. داده گراف بعد از اولین دانلود در حافظه مرورگر می‌ماند.</p>
+<p class="legend">اندازه گره مدرسه = ‎3 + 25·√(آخرین شهریه ثبت‌شده / بیشینه) — رنگ = مقطع. <b>روی هر گره ببرید</b> تا فقط همان نقطه و خط‌های خودش روشن بماند و بقیه محو شود؛ <b>با کشیدنِ گره</b> می‌توانید آن را جابه‌جا کنید (جابه‌جایی‌ها با «بازنشانی نما» برمی‌گردد). نگه‌داشتن روی یک مدرسه، خوشهٔ همان مؤسس را در پنل کناری فهرست می‌کند و خط‌های هم‌مؤسس پررنگ‌ترند. برای دیدن فقط یک استان، منوی «تفکیک استانی» را باز کنید. داده گراف بعد از اولین دانلود در حافظه مرورگر می‌ماند.</p>
 </section>
 <section id="fallback" hidden>
 <h2>جدول جایگزین</h2>
@@ -220,6 +225,26 @@
       if (sch[i][5] == null) provNoFee.set(p, (provNoFee.get(p) || 0) + 1);
     }
 
+    // Nodes dragged by the user live only in this session: ECharts writes the
+    // new position back into its own data on 'drag', so we snapshot it before
+    // every rebuild (apply) and feed it back through buildNodes.
+    const dragPos = new Map();  // school index -> [x, y]
+    const hubPos = new Map();   // district index -> [x, y]
+
+    function captureDragged() {
+      const cur = chart.getOption().series[0].data;
+      if (!cur) return;
+      for (const d of cur) {
+        if (d._i != null) {
+          const was = dragPos.get(d._i) || [sch[d._i][11], sch[d._i][12]];
+          if (d.x !== was[0] || d.y !== was[1]) dragPos.set(d._i, [d.x, d.y]);
+        } else if (d._h != null) {
+          const was = hubPos.get(d._h) || [dists[d._h][3], dists[d._h][4]];
+          if (d.x !== was[0] || d.y !== was[1]) hubPos.set(d._h, [d.x, d.y]);
+        }
+      }
+    }
+
     function buildNodes(dimStage, dimGender, hiFounder) {
       const nodes = [];
       const prov = state.prov;
@@ -229,20 +254,29 @@
         const nodisp = s[5] == null;
         const dim = (dimStage.has(s[3]) || dimGender.has(s[4])) ||
           (hiFounder && s[1] !== hiFounder);
+        const p = dragPos.get(i);
+        const x = p ? p[0] : s[11], y = p ? p[1] : s[12];
         nodes.push({ id: 's' + s[0], name: 's' + s[0],
           // layout:'none' reads positions from x/y — NOT from value:[x,y]
-          x: s[11], y: s[12], value: [s[11], s[12]],
+          x, y, value: [x, y],
           symbolSize: nodisp ? 1.5 : sizeOf(s[5]), category: nodisp ? NULL_CAT : s[3],
-          itemStyle: dim ? { opacity: 0.06 } : {},
+          // thin light rim so overlapping dots read as separate points
+          itemStyle: dim ? { opacity: 0.06, borderWidth: 0 }
+            : (nodisp ? { borderWidth: 0 } : { borderColor: '#ffffff', borderWidth: 0.4 }),
           _i: i });
       }
       for (let k = 0; k < dists.length; k++) {
         if (prov && provOfDist[k] !== prov) continue;
         const d = dists[k];
+        const p = hubPos.get(k);
+        const x = p ? p[0] : d[3], y = p ? p[1] : d[4];
         nodes.push({ id: 'h' + d[0], name: 'h' + d[0],
-          x: d[3], y: d[4], value: [d[3], d[4]],
-          symbolSize: 13, category: HUB_CAT,
-          label: { show: true, formatter: d[1], fontSize: 10, color: '#111', fontFamily: FONT },
+          x, y, value: [x, y],
+          symbolSize: 15, category: HUB_CAT,
+          itemStyle: { borderColor: '#ffffff', borderWidth: 1.4,
+            shadowBlur: 6, shadowColor: 'rgba(0,0,0,.25)' },
+          label: { show: true, formatter: d[1], fontSize: 10, color: '#111', fontFamily: FONT,
+            textBorderColor: '#ffffff', textBorderWidth: 2.5 },
           labelLayout: { hideOverlap: true }, _h: k });
       }
       return nodes;
@@ -256,7 +290,10 @@
           if (prov && provOfSchool[i] !== prov) continue;
           if (sch[i][5] == null) continue; // no tuition -> no district edge
           links.push({ source: 's' + sch[i][0], target: 'h' + sch[i][2],
-            lineStyle: { color: '#999', opacity: 0.1, width: 1 } });
+            lineStyle: { color: '#9fb3ac', opacity: 0.12, width: 1 },
+            // district links stay faint even when highlighted: the eye should
+            // only pick up the same-founder connections
+            emphasis: { lineStyle: { color: '#b8c6c1', opacity: 0.1, width: 1 } } });
         }
       }
       if (showFound) {
@@ -266,8 +303,12 @@
             const a = sch[arr[k - 1]], b = sch[arr[k]];
             const strong = a[9] === b[9];
             links.push({ source: 's' + a[0], target: 's' + b[0], lineStyle: strong
-              ? { color: '#0f5c40', opacity: 0.85, width: 2.2 }
-              : { color: '#888', opacity: 0.35, width: 1, type: 'dashed' } });
+              ? { color: '#0f5c40', opacity: 0.8, width: 2 }
+              : { color: '#8a9a95', opacity: 0.3, width: 1, type: 'dashed' },
+              // same-founder links are the ones that light up on hover/drag
+              emphasis: { lineStyle: strong
+                ? { color: '#0a3d2a', opacity: 1, width: 3.4 }
+                : { color: '#5c6b66', opacity: 0.75, width: 1.6 } } });
           }
         }
       }
@@ -350,8 +391,11 @@
       chart.setOption({ series: [{ links: buildLinks(state.showDist, state.showFound) }] });
     }
 
-    function apply(keepView, withLinks) {
+    function apply(keepView, withLinks, skipCapture) {
       if (withLinks === undefined) withLinks = true;
+      // skipCapture is used by "reset", which must NOT re-read the positions it
+      // just discarded (otherwise the drag is captured again immediately)
+      if (!skipCapture) captureDragged(); // keep wherever the user dragged nodes
       chart.setOption({ series: [{ data: buildNodes(state.dimStage, state.dimGender, state.hiFounder),
         links: withLinks ? buildLinks(state.showDist, state.showFound) : [] }] },
         keepView ? {} : false);
@@ -386,7 +430,14 @@
         textStyle: { fontFamily: FONT } }],
       series: [{ type: 'graph', layout: 'none',
         data: [], links: [], categories, roam: true,
-        progressive: 3000, emphasis: { focus: 'adjacency', lineStyle: { width: 3 } },
+        // nodes can be picked up and moved with the mouse; ECharts rewrites the
+        // position and re-routes its edges (simpleLayoutEdge) on every frame
+        draggable: true, cursor: 'move',
+        progressive: 3000,
+        // hovering/dragging a node isolates it and its own links
+        emphasis: { focus: 'adjacency', scale: 1.4, lineStyle: { width: 3 } },
+        // everything else fades right down, so "isolated" is unmistakable
+        blur: { itemStyle: { opacity: 0.04 }, lineStyle: { opacity: 0.02 } },
         label: { show: false }, edgeSymbol: ['none', 'none'] }],
     });
     registerChart('net', chart, null);
@@ -418,6 +469,47 @@
       return sidx.get(String(idStr)) || null;
     }
 
+    // Hovering a school lights up its own links in the canvas (ECharts
+    // emphasis.focus) and this panel spells out the whole same-founder group.
+    // Pure DOM on purpose: re-setting 25k nodes costs ~4.4s, so nothing here
+    // may trigger a graph re-render.
+    const sideBody = document.getElementById('sideBody');
+    const SIDE_HINT = '<p class="legend">روی یک گره ناحیه (دایره بزرگ) کلیک کنید، ' +
+      'و روی مدرسه نگه دارید تا خوشهٔ مؤسسش را ببینید.</p>';
+    let sideOwner = null;
+
+    function showFounderCluster(i) {
+      const s = sch[i];
+      const arr = groups.get(s[1]);
+      if (!arr || arr.length < 2) {
+        if (sideOwner === 'founder') { sideBody.innerHTML = SIDE_HINT; sideOwner = null; }
+        return;
+      }
+      sideOwner = 'founder';
+      const rows = arr.map((j, k) => {
+        const t = sch[j];
+        return '<tr' + (j === i ? ' style="background:#e3f0e9;font-weight:700"' : '') +
+          '><td>' + faNum(k + 1) + '</td><td>' + t[0] + '</td><td>' + dists[t[2]][1] +
+          '</td><td>' + stages[t[3]] + '</td><td>' + faNum(t[5]) + yearTag(t[8]) + '</td></tr>';
+      }).join('');
+      const strong = arr.filter((j) => sch[j][9] === s[9]).length;
+      sideBody.innerHTML =
+        '<p><b>🏫 ' + (G.founders[s[1]] || '—') + '</b><br>' +
+        faNum(arr.length) + ' مدرسه با این مؤسس' +
+        (strong > 1 ? ' · ' + faNum(strong) + ' مدرسه با نام یکسان' : '') + '</p>' +
+        '<p class="legend">همین گروه روی گراف با خط پررنگ به هم وصل است.</p>' +
+        '<div class="tblwrap"><table><thead><tr><th>#</th><th>کد</th><th>ناحیه</th>' +
+        '<th>مقطع</th><th>مجموع</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+    }
+
+    chart.on('mouseover', (p) => {
+      const d = (p && p.data) || {};
+      if (d._i !== undefined) showFounderCluster(d._i);
+    });
+    chart.on('mouseout', () => {
+      if (sideOwner === 'founder') { sideBody.innerHTML = SIDE_HINT; sideOwner = null; }
+    });
+
     chart.on('click', async (p) => {
       const d = p.data || {};
       if (d._h !== undefined) {
@@ -427,6 +519,7 @@
           return '<tr><td>' + faNum(k + 1) + '</td><td>' + s[0] + '</td><td>' +
             stages[s[3]] + '</td><td>' + faNum(s[5]) + yearTag(s[8]) + '</td></tr>';
         }).join('');
+        sideOwner = 'hub';
         document.getElementById('sideBody').innerHTML =
           '<p><b>' + h[1] + '</b> · ' + faNum(h[5]) + ' مدرسه · میانه ' + faNum(h[6]) + '</p>' +
           '<p><a href="../districts/' + h[7] + '.html">ورود به صفحه ناحیه ←</a></p>' +
@@ -478,9 +571,10 @@
       state.dimStage.clear(); state.dimGender.clear(); state.hiFounder = null;
       chips.querySelectorAll('.chip').forEach((c) => c.classList.remove('off'));
       state.prov = null;
+      dragPos.clear(); hubPos.clear(); // also undo any node the user moved
       syncProvUI();
       resetView();
-      apply(false, true);
+      apply(false, true, true);
     };
 
     let fuse = null;
