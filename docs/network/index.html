@@ -60,6 +60,10 @@
 <ul id="searchRes" hidden></ul>
 <div id="chips" class="row" style="margin:8px 0"></div>
     <div class="row" style="margin:8px 0">
+      <span style="flex:0 0 auto;font-size:.9rem">🤝 حداقل اشتراک مؤسس:</span>
+      <select id="shareSel" style="flex:1 1 240px" aria-label="حداقل تعداد مدارس با یک مؤسس"></select>
+    </div>
+    <div class="row" style="margin:8px 0">
       <details class="provdd" id="provDD">
         <summary>🗺️ تفکیک استانی — نمایش: <b id="provLabel">کل کشور</b></summary>
         <div class="tbar" style="padding:8px 10px 0"><input type="search" id="provQ" placeholder="جست‌وجوی استان…" autocomplete="off" aria-label="جست‌وجوی استان"></div>
@@ -78,7 +82,7 @@
 <div style="flex:1 1 220px" id="side"><h3 style="margin-top:0">📌 پنل ناحیه / خوشهٔ مؤسس</h3><div id="sideBody"><p class="legend">روی یک گره ناحیه (دایره بزرگ) کلیک کنید، و روی مدرسه نگه دارید تا خوشهٔ مؤسسش را اینجا ببینید. این جدول تا وقتی روی مدرسهٔ دیگری نروید باقی می‌ماند.</p></div></div>
 </div>
 <p class="legend"><b>هشدار دربارهٔ دادهٔ «مؤسس مشترک»:</b> در دیتاست هیچ شناسهٔ یکتای شخصی (مثل کد ملی) وجود ندارد؛ خوشه‌بندی مؤسسان صرفاً بر پایهٔ <i>نام</i> انجام می‌شود. بنابراین یک نام مشترک ممکن است به دو شخص یا دو شرکت متفاوت تعلق داشته باشد، و یک مؤسس واقعی هم اگر نامش درست ثبت نشده باشد به چند خوشهٔ جدا تقسیم شود. پس «مدارس با مؤسس یکسان» در این داشبورد یک <b>نشانهٔ احتمالی</b> است، نه رابطهٔ قطعی مالکیت. برای همین یال‌های مؤسسی در نمودار پررنگ‌تر از یال‌های ناحیه نمایش داده می‌شوند تا به‌عنوان «احتمال» خوانده شوند.</p>
-<p class="legend">اندازه گره مدرسه = ‎2 + 7·√(آخرین شهریه ثبت‌شده / بیشینه) — رنگ = مقطع. اندازه‌ها عمداً کوچک نگه داشته شده‌اند تا با ۲۵ هزار نقطه روی هم نیفتند و نودهای زیرین هم دیده شوند؛ برای دیدن ریزتر، زوم کنید. <b>روی هر گره ببرید</b> تا فقط همان نقطه و خط‌های خودش روشن بماند و بقیه محو شود؛ <b>با کشیدنِ گره</b> می‌توانید آن را جابه‌جا کنید (جابه‌جایی‌ها با «بازنشانی نما» برمی‌گردد). نگه‌داشتن روی یک مدرسه، خوشهٔ همان مؤسس را در پنل کناری فهرست می‌کند و تا وقتی روی مدرسهٔ دیگری نروید باقی می‌ماند. خط‌های هم‌مؤسس پررنگ‌تر از یال‌های ناحیه‌اند. برای دیدن فقط یک استان، منوی «تفکیک استانی» را باز کنید. داده گراف بعد از اولین دانلود در حافظه مرورگر می‌ماند.</p>
+<p class="legend">اندازه گره مدرسه = ‎2 + 7·√(آخرین شهریه ثبت‌شده / بیشینه) — رنگ = مقطع. اندازه‌ها عمداً کوچک نگه داشته شده‌اند تا با ۲۵ هزار نقطه روی هم نیفتند و نودهای زیرین هم دیده شوند؛ برای دیدن ریزتر، زوم کنید. <b>روی هر گره ببرید</b> تا فقط همان نقطه و خط‌های خودش روشن بماند و بقیه محو شود؛ <b>با کشیدنِ گره</b> می‌توانید آن را جابه‌جا کنید (جابه‌جایی‌ها با «بازنشانی نما» برمی‌گردد). نگه‌داشتن روی یک مدرسه، خوشهٔ همان مؤسس را در پنل کناری فهرست می‌کند و تا وقتی روی مدرسهٔ دیگری نروید باقی می‌ماند. خط‌های هم‌مؤسس پررنگ‌تر از یال‌های ناحیه‌اند. منوی «حداقل اشتراک مؤسس» خوشه‌های کوچک را پنهان می‌کند (بزرگ‌ترین اشتراک: ۵۰ مدرسه؛ پیش‌فرض بدون فیلتر). برای دیدن فقط یک استان، منوی «تفکیک استانی» را باز کنید. داده گراف بعد از اولین دانلود در حافظه مرورگر می‌ماند.</p>
 </section>
 <section id="fallback" hidden>
 <h2>جدول جایگزین</h2>
@@ -206,6 +210,30 @@
       else arr.sort((a, b) => a - b);
     }
 
+    // ---- founder "share" sizes: cluster size per school (0 = no shared founder)
+    // Counted over ALL schools of a founder, not just the ones that have tuition:
+    // ownership is independent of the tuition data, and reusing `groups` (which
+    // skips no-tuition schools) understated the biggest share as 43 instead of 50.
+    const shareSize = new Array(sch.length).fill(0);
+    const shareHist = new Map(); // cluster size -> number of clusters
+    {
+      const all = new Map();
+      sch.forEach((s, i) => {
+        const h = s[1];
+        if (!all.has(h)) all.set(h, []);
+        all.get(h).push(i);
+      });
+      for (const [h, arr] of all) {
+        if (arr.length < 2) continue;
+        const nm = G.founders[h];
+        if (!nm || nm === 'نامشخص') continue;
+        shareHist.set(arr.length, (shareHist.get(arr.length) || 0) + 1);
+        for (const j of arr) shareSize[j] = arr.length;
+      }
+    }
+    // the largest single founder share in the dataset
+    const MAX_SHARE = shareHist.size ? Math.max(...shareHist.keys()) : 0;
+
     const hubMembers = dists.map(() => []);
     sch.forEach((s, i) => hubMembers[s[2]].push(i));
     hubMembers.forEach((arr) => arr.sort((a, b) => (sch[b][5] || -1) - (sch[a][5] || -1)));
@@ -252,8 +280,10 @@
     function buildNodes(dimStage, dimGender, hiFounder) {
       const nodes = [];
       const prov = state.prov;
+      const sf = shareFilterOn();
       for (let i = 0; i < sch.length; i++) {
         if (prov && provOfSchool[i] !== prov) continue;
+        if (sf && shareSize[i] && shareSize[i] < state.minShare) continue; // share too small
         const s = sch[i];
         const nodisp = s[5] == null;
         const dim = (dimStage.has(s[3]) || dimGender.has(s[4])) ||
@@ -289,9 +319,11 @@
     function buildLinks(showDist, showFound) {
       const links = [];
       const prov = state.prov;
+      const sf = shareFilterOn();
       if (showDist) {
         for (let i = 0; i < sch.length; i++) {
           if (prov && provOfSchool[i] !== prov) continue;
+          if (sf && shareSize[i] && shareSize[i] < state.minShare) continue;
           if (sch[i][5] == null) continue; // no tuition -> no district edge
           links.push({ source: 's' + sch[i][0], target: 'h' + sch[i][2],
             lineStyle: { color: '#9fb3ac', opacity: 0.12, width: 1 },
@@ -302,6 +334,7 @@
       }
       if (showFound) {
         for (const arr of groups.values()) {
+          if (sf && arr.length < state.minShare) continue; // whole share below threshold
           for (let k = 1; k < arr.length; k++) {
             if (prov && (provOfSchool[arr[k - 1]] !== prov || provOfSchool[arr[k]] !== prov)) continue;
             const a = sch[arr[k - 1]], b = sch[arr[k]];
@@ -319,8 +352,10 @@
       return links;
     }
 
+    // minShare defaults to MAX_SHARE + 1, i.e. "no share threshold": every
+    // cluster is shown. Choosing K hides every shared cluster smaller than K.
     const state = { dimStage: new Set(), dimGender: new Set(), hiFounder: null,
-      showDist: false, showFound: true, prov: null };
+      showDist: false, showFound: true, prov: null, minShare: MAX_SHARE + 1 };
 
     // NOTE: no custom zoom/center. ECharts' default graph view (zoom 1) already
     // fits this layout to the container; forcing a computed zoom shrank the
@@ -331,17 +366,60 @@
 
     function writeCounter(withLinks) {
       const prov = state.prov;
-      const shown = state.hiFounder
-        ? sch.filter((s) => s[1] === state.hiFounder).length
-        : (prov ? (provCount.get(prov) || 0) : TOTAL);
+      let shown;
+      if (state.hiFounder) {
+        shown = sch.filter((s) => s[1] === state.hiFounder).length;
+      } else {
+        shown = 0;
+        const sf = shareFilterOn();
+        for (let i = 0; i < sch.length; i++) {
+          if (prov && provOfSchool[i] !== prov) continue;
+          if (sf && shareSize[i] && shareSize[i] < state.minShare) continue;
+          shown++;
+        }
+      }
       const nn = prov ? (provNoFee.get(prov) || 0) : nNull;
+      const shareOn = state.minShare <= MAX_SHARE;
       const head = state.hiFounder ? 'تمرکز روی خوشه موسس: '
-        : (prov ? 'استان ' + (PROVNAME.get(prov) || prov) + ': ' : 'نمایش ');
+        : (shareOn ? 'اشتراک مؤسس ' + faNum(state.minShare) + ' مدرسه یا بیشتر'
+          + (prov ? ' — استان ' + (PROVNAME.get(prov) || prov) : '') + ': '
+          : (prov ? 'استان ' + (PROVNAME.get(prov) || prov) + ': ' : 'نمایش '));
       document.getElementById('counter').textContent =
         head + faNum(shown) + ' از ' + faNum(TOTAL) + ' مدرسه' +
         (nn ? ' (' + faNum(nn) + ' بدون شهریه ثبت‌شده، خاکستری)' : '') +
         (withLinks ? '' : ' · یال‌ها در راه‌اند…') +
         ((state.dimStage.size || state.dimGender.size) ? ' (بخشی کم‌رنگ شده با فیلتر)' : '');
+    }
+
+    // The dropdown's top option is MAX_SHARE + 1 and means "no filter at all";
+    // any real threshold (2..MAX_SHARE) hides the smaller shares.
+    const shareFilterOn = () => state.minShare <= MAX_SHARE;
+
+    // ---- founder-share threshold dropdown (default = MAX_SHARE + 1 = no filter)
+    function buildShareSelect() {
+      const sel = document.getElementById('shareSel');
+      if (!sel) return;
+      const cum = new Map(); // threshold -> {clusters, schools}
+      for (const size of shareHist.keys()) {
+        let clusters = 0, schools = 0;
+        for (const [s2, n2] of shareHist) if (s2 >= size) { clusters += n2; schools += s2 * n2; }
+        cum.set(size, { clusters, schools });
+      }
+      const top = MAX_SHARE + 1;
+      const opts = ['<option value="' + top + '">بدون فیلتر — همهٔ مدارس</option>'];
+      for (let k = MAX_SHARE; k >= 2; k--) {
+        const c = cum.get(k) || { clusters: 0, schools: 0 };
+        opts.push('<option value="' + k + '">اشتراک ' + faNum(k) + ' مدرسه یا بیشتر — ' +
+          faNum(c.clusters) + ' خوشه، ' + faNum(c.schools) + ' مدرسه</option>');
+      }
+      sel.innerHTML = opts.join('');
+      sel.value = String(state.minShare);
+      sel.onchange = () => {
+        state.minShare = +sel.value;
+        state.hiFounder = null;
+        resetView();
+        apply(false, true);
+      };
     }
 
     // ---- province picker (collapsible <details>) ----
@@ -460,6 +538,7 @@
     const nodes0 = buildNodes(new Set(), new Set(), null);
     chart.setOption({ series: [{ data: nodes0, links: [] }] });
     buildProvList();
+    buildShareSelect();
     writeCounter(false);
 
     // phase 2: add edges after the first frame. setTimeout (NOT rAF): rAF does
@@ -599,6 +678,9 @@
       state.dimStage.clear(); state.dimGender.clear(); state.hiFounder = null;
       chips.querySelectorAll('.chip').forEach((c) => c.classList.remove('off'));
       state.prov = null;
+      state.minShare = MAX_SHARE + 1; // back to "no share threshold"
+      const sel = document.getElementById('shareSel');
+      if (sel) sel.value = String(state.minShare);
       dragPos.clear(); hubPos.clear(); // also undo any node the user moved
       syncProvUI();
       resetView();
