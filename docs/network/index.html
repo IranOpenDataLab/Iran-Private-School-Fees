@@ -406,13 +406,24 @@
       animation: false,
       textStyle: { fontFamily: FONT },      tooltip: { trigger: 'item', confine: true,
         formatter: (p) => {
+          if (!p) return '';
           const d = p.data;
+          if (!d) return '';
           if (d._h !== undefined) {
             const h = dists[d._h];
             return '<div dir="rtl"><b>' + h[1] + '</b><br>مدارس: ' + faNum(h[5]) +
               '<br>میانه: ' + faNum(h[6]) + ' تومان<br><span style="color:#888">کلیک: فهرست ناحیه</span></div>';
           }
+          if (d._i === undefined) {
+            // hovering a LINE: p.data is the link, not a school
+            if (d.source == null) return '';
+            const isFound = String(d.source).charAt(0) === 's' && String(d.target).charAt(0) === 's';
+            return '<div dir="rtl">' + (isFound
+              ? 'یال خوشهٔ مؤسس<br><span style="color:#888">دو مدرسه با یک مؤسس در ارتباط‌اند</span>'
+              : 'یال ناحیه<br><span style="color:#888">اتصال مدرسه به ناحیهٔ خودش</span>') + '</div>';
+          }
           const s = sch[d._i];
+          if (!s) return '';
           const hub = dists[s[2]];
           if (s[5] == null) {
             return '<div dir="rtl"><b>' + s[0] + '</b><br>' + hub[1] + ' · ' +
