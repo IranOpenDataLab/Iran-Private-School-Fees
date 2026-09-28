@@ -648,6 +648,10 @@ def main():
                                      'strong edge iff equal nm (normalized-name hash)'},
                'districts': g_districts,
                'schools': g_schools,
+               # parallel to 'schools' (same order, no index shift): the real
+               # school names, so the graph UI can label nodes without having
+               # to download the 8 MB search index
+               'school_names': list(school_name),
                'founders': founder_display})
 
     # ---- reports/founder_clusters.csv (clusters with >= 2 schools)

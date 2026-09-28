@@ -63,6 +63,12 @@
       <span style="flex:0 0 auto;font-size:.9rem">🤝 حداقل اشتراک مؤسس:</span>
       <select id="shareSel" style="flex:1 1 240px" aria-label="حداقل تعداد مدارس با یک مؤسس"></select>
     </div>
+    <details class="provdd" id="shareDD" style="margin:0 0 10px">
+      <summary>📊 اشتراک مؤسس به تفکیک استان</summary>
+      <p class="legend" id="shareSum" style="margin:8px 2px 4px"></p>
+      <div class="tblwrap"><table><thead><tr><th>استان</th><th>خوشه‌ها</th><th>مدارس</th><th>بزرگ‌ترین اشتراک</th></tr></thead><tbody id="shareBody"></tbody></table></div>
+      <p class="legend" id="shareNote" style="margin-top:6px"></p>
+    </details>
     <div class="row" style="margin:8px 0">
       <details class="provdd" id="provDD">
         <summary>🗺️ تفکیک استانی — نمایش: <b id="provLabel">کل کشور</b></summary>
@@ -82,7 +88,7 @@
 <div style="flex:1 1 220px" id="side"><h3 style="margin-top:0">📌 پنل ناحیه / خوشهٔ مؤسس</h3><div id="sideBody"><p class="legend">روی یک گره ناحیه (دایره بزرگ) کلیک کنید، و روی مدرسه نگه دارید تا خوشهٔ مؤسسش را اینجا ببینید. این جدول تا وقتی روی مدرسهٔ دیگری نروید باقی می‌ماند.</p></div></div>
 </div>
 <p class="legend"><b>هشدار دربارهٔ دادهٔ «مؤسس مشترک»:</b> در دیتاست هیچ شناسهٔ یکتای شخصی (مثل کد ملی) وجود ندارد؛ خوشه‌بندی مؤسسان صرفاً بر پایهٔ <i>نام</i> انجام می‌شود. بنابراین یک نام مشترک ممکن است به دو شخص یا دو شرکت متفاوت تعلق داشته باشد، و یک مؤسس واقعی هم اگر نامش درست ثبت نشده باشد به چند خوشهٔ جدا تقسیم شود. پس «مدارس با مؤسس یکسان» در این داشبورد یک <b>نشانهٔ احتمالی</b> است، نه رابطهٔ قطعی مالکیت. برای همین یال‌های مؤسسی در نمودار پررنگ‌تر از یال‌های ناحیه نمایش داده می‌شوند تا به‌عنوان «احتمال» خوانده شوند.</p>
-<p class="legend">اندازه گره مدرسه = ‎2 + 7·√(آخرین شهریه ثبت‌شده / بیشینه) — رنگ = مقطع. اندازه‌ها عمداً کوچک نگه داشته شده‌اند تا با ۲۵ هزار نقطه روی هم نیفتند و نودهای زیرین هم دیده شوند؛ برای دیدن ریزتر، زوم کنید. <b>روی هر گره ببرید</b> تا فقط همان نقطه و خط‌های خودش روشن بماند و بقیه محو شود؛ <b>با کشیدنِ گره</b> می‌توانید آن را جابه‌جا کنید (جابه‌جایی‌ها با «بازنشانی نما» برمی‌گردد). نگه‌داشتن روی یک مدرسه، خوشهٔ همان مؤسس را در پنل کناری فهرست می‌کند و تا وقتی روی مدرسهٔ دیگری نروید باقی می‌ماند. خط‌های هم‌مؤسس پررنگ‌تر از یال‌های ناحیه‌اند. منوی «حداقل اشتراک مؤسس» خوشه‌های کوچک را پنهان می‌کند (بزرگ‌ترین اشتراک: ۵۰ مدرسه؛ پیش‌فرض بدون فیلتر). برای دیدن فقط یک استان، منوی «تفکیک استانی» را باز کنید. داده گراف بعد از اولین دانلود در حافظه مرورگر می‌ماند.</p>
+<p class="legend">اندازه گره مدرسه = ‎2 + 7·√(آخرین شهریه ثبت‌شده / بیشینه) — رنگ = مقطع. اندازه‌ها عمداً کوچک نگه داشته شده‌اند تا با ۲۵ هزار نقطه روی هم نیفتند و نودهای زیرین هم دیده شوند؛ برای دیدن ریزتر، زوم کنید. <b>روی هر گره ببرید</b> تا فقط همان نقطه و خط‌های خودش روشن بماند و بقیه محو شود؛ <b>با کشیدنِ گره</b> می‌توانید آن را جابه‌جا کنید (جابه‌جایی‌ها با «بازنشانی نما» برمی‌گردد). نگه‌داشتن روی یک مدرسه، خوشهٔ همان مؤسس را در پنل کناری فهرست می‌کند و تا وقتی روی مدرسهٔ دیگری نروید باقی می‌ماند. خط‌های هم‌مؤسس پررنگ‌تر از یال‌های ناحیه‌اند. منوی «حداقل اشتراک مؤسس» خوشه‌های کوچک را پنهان می‌کند (آستانه‌ها: ۲، ۳، ۴، ۵، ۱۰، ۱۵، ۲۰، ۳۰، ۴۰+ مدرسه؛ بزرگ‌ترین اشتراک ۵۰ مدرسه و پیش‌فرض بدون فیلتر). بخش «اشتراک مؤسس به تفکیک استان» هم کل کشور و هم هر استان را برای آستانهٔ انتخاب‌شده نشان می‌دهد. برای دیدن فقط یک استان، منوی «تفکیک استانی» را باز کنید. داده گراف بعد از اولین دانلود در حافظه مرورگر می‌ماند.</p>
 </section>
 <section id="fallback" hidden>
 <h2>جدول جایگزین</h2>
@@ -189,6 +195,8 @@
   function buildGraph(chart, G, t0) {
     const stages = G.meta.stages, genders = G.meta.genders;
     const dists = G.districts, sch = G.schools;
+    const sname = G.school_names || []; // real names, parallel to `sch`
+    const nameOf = (i) => sname[i] || String(sch[i][0]);
     const maxT = Math.max(...sch.map((s) => s[5] || 0), 1);
     // symbolSize is in SCREEN pixels and does NOT scale with graph zoom, so it
     // must stay small: at the default fit-to-frame view 25k dots at the old
@@ -210,31 +218,8 @@
       else arr.sort((a, b) => a - b);
     }
 
-    // ---- founder "share" sizes: cluster size per school (0 = no shared founder)
-    // Counted over ALL schools of a founder, not just the ones that have tuition:
-    // ownership is independent of the tuition data, and reusing `groups` (which
-    // skips no-tuition schools) understated the biggest share as 43 instead of 50.
-    const shareSize = new Array(sch.length).fill(0);
-    const shareHist = new Map(); // cluster size -> number of clusters
-    {
-      const all = new Map();
-      sch.forEach((s, i) => {
-        const h = s[1];
-        if (!all.has(h)) all.set(h, []);
-        all.get(h).push(i);
-      });
-      for (const [h, arr] of all) {
-        if (arr.length < 2) continue;
-        const nm = G.founders[h];
-        if (!nm || nm === 'نامشخص') continue;
-        shareHist.set(arr.length, (shareHist.get(arr.length) || 0) + 1);
-        for (const j of arr) shareSize[j] = arr.length;
-      }
-    }
-    // the largest single founder share in the dataset
-    const MAX_SHARE = shareHist.size ? Math.max(...shareHist.keys()) : 0;
-
     const hubMembers = dists.map(() => []);
+    // Nodes dragged by the user live only in this session: ECharts writes the
     sch.forEach((s, i) => hubMembers[s[2]].push(i));
     hubMembers.forEach((arr) => arr.sort((a, b) => (sch[b][5] || -1) - (sch[a][5] || -1)));
 
@@ -256,6 +241,39 @@
       provCount.set(p, (provCount.get(p) || 0) + 1);
       if (sch[i][5] == null) provNoFee.set(p, (provNoFee.get(p) || 0) + 1);
     }
+
+    // ---- founder "share" sizes: cluster size per school (0 = no shared founder)
+    // Counted over ALL schools of a founder, not just the ones that have tuition:
+    // ownership is independent of the tuition data, and reusing `groups` (which
+    // skips no-tuition schools) understated the biggest share as 43 instead of 50.
+    const shareSize = new Array(sch.length).fill(0);
+    const shareHist = new Map();            // cluster size -> number of clusters
+    const shareClusters = [];               // {size, provs:[slug], schools}
+    {
+      const all = new Map();
+      sch.forEach((s, i) => {
+        const h = s[1];
+        if (!all.has(h)) all.set(h, []);
+        all.get(h).push(i);
+      });
+      for (const [h, arr] of all) {
+        if (arr.length < 2) continue;
+        const nm = G.founders[h];
+        if (!nm || nm === 'نامشخص') continue;
+        shareHist.set(arr.length, (shareHist.get(arr.length) || 0) + 1);
+        const provs = [];
+        for (const j of arr) {
+          shareSize[j] = arr.length;
+          const sl = provOfSchool[j];
+          if (!provs.includes(sl)) provs.push(sl);
+        }
+        shareClusters.push({ size: arr.length, provs });
+      }
+    }
+    // the largest single founder share in the dataset
+    const MAX_SHARE = shareHist.size ? Math.max(...shareHist.keys()) : 0;
+    // thresholds offered in the dropdown
+    const SHARE_STEPS = [2, 3, 4, 5, 10, 15, 20, 30, 40].filter((k) => k <= MAX_SHARE);
 
     // Nodes dragged by the user live only in this session: ECharts writes the
     // new position back into its own data on 'drag', so we snapshot it before
@@ -396,30 +414,93 @@
     const shareFilterOn = () => state.minShare <= MAX_SHARE;
 
     // ---- founder-share threshold dropdown (default = MAX_SHARE + 1 = no filter)
+    // For every offered step we report the country total AND the per-province
+    // breakdown (how many clusters each province holds at that threshold).
+    function shareStats(k) {
+      const byProv = new Map(); // slug -> {clusters, schools, max}
+      for (const c of shareClusters) {
+        if (c.size < k) continue;
+        for (const sl of c.provs) {
+          let e = byProv.get(sl);
+          if (!e) { e = { clusters: 0, schools: 0, max: 0 }; byProv.set(sl, e); }
+          e.clusters++;
+          if (c.size > e.max) e.max = c.size;
+        }
+      }
+      // schools counted per province (a cluster may span provinces)
+      const schByProv = new Map();
+      for (let i = 0; i < sch.length; i++) {
+        if (shareSize[i] && shareSize[i] >= k) {
+          const sl = provOfSchool[i];
+          schByProv.set(sl, (schByProv.get(sl) || 0) + 1);
+        }
+      }
+      for (const [sl, e] of byProv) e.schools = schByProv.get(sl) || 0;
+      // country cluster count must come from shareHist: summing the per-province
+      // counts would count a cluster once per province it spans
+      let clusters = 0, schools = 0, maxSize = 0;
+      for (const [size, n] of shareHist) {
+        if (size < k) continue;
+        clusters += n;
+        if (size > maxSize) maxSize = size;
+      }
+      for (const v of schByProv.values()) schools += v;
+      return { byProv, clusters, schools, maxSize };
+    }
+
     function buildShareSelect() {
       const sel = document.getElementById('shareSel');
       if (!sel) return;
-      const cum = new Map(); // threshold -> {clusters, schools}
-      for (const size of shareHist.keys()) {
-        let clusters = 0, schools = 0;
-        for (const [s2, n2] of shareHist) if (s2 >= size) { clusters += n2; schools += s2 * n2; }
-        cum.set(size, { clusters, schools });
-      }
-      const top = MAX_SHARE + 1;
-      const opts = ['<option value="' + top + '">بدون فیلتر — همهٔ مدارس</option>'];
-      for (let k = MAX_SHARE; k >= 2; k--) {
-        const c = cum.get(k) || { clusters: 0, schools: 0 };
-        opts.push('<option value="' + k + '">اشتراک ' + faNum(k) + ' مدرسه یا بیشتر — ' +
-          faNum(c.clusters) + ' خوشه، ' + faNum(c.schools) + ' مدرسه</option>');
+      const opts = ['<option value="' + (MAX_SHARE + 1) +
+        '">بدون فیلتر — همهٔ مدارس</option>'];
+      for (const k of SHARE_STEPS) {
+        const st = shareStats(k);
+        opts.push('<option value="' + k + '">اشتراک ' + faNum(k) +
+          '+ مدرسه — کل کشور: ' + faNum(st.clusters) + ' خوشه / ' + faNum(st.schools) + ' مدرسه</option>');
       }
       sel.innerHTML = opts.join('');
       sel.value = String(state.minShare);
+      renderShareBreakdown();
       sel.onchange = () => {
         state.minShare = +sel.value;
         state.hiFounder = null;
+        renderShareBreakdown();
         resetView();
         apply(false, true);
       };
+    }
+
+    // per-province table for the current threshold, plus a country total row
+    function renderShareBreakdown() {
+      const body = document.getElementById('shareBody');
+      if (!body) return;
+      const k = state.minShare;
+      document.getElementById('shareSum').textContent = k <= MAX_SHARE
+        ? 'برای آستانهٔ ' + faNum(k) + '+ مدرسه:'
+        : 'بدون فیلتر — همهٔ مدارس در گراف هستند:';
+      if (k > MAX_SHARE) {
+        body.innerHTML = '<tr><td colspan="4" class="pc">—</td></tr>';
+        return;
+      }
+      const st = shareStats(k);
+      const rows = [...st.byProv.entries()].map(([sl, e]) => ({
+        sl, clusters: e.clusters, schools: e.schools, max: e.max
+      })).sort((a, b) => b.clusters - a.clusters || b.schools - a.schools);
+      if (!rows.length) {
+        body.innerHTML = '<tr><td colspan="4" class="pc">هیچ خوشه‌ای با این آستانه نیست</td></tr>';
+        return;
+      }
+      body.innerHTML = rows.map((r2) =>
+        '<tr' + (state.prov === r2.sl ? ' style="background:#e3f0e9;font-weight:700"' : '') +
+        '><td>' + (PROVNAME.get(r2.sl) || r2.sl) + '</td><td>' + faNum(r2.clusters) +
+        '</td><td>' + faNum(r2.schools) + '</td><td>' + faNum(r2.max) + '</td></tr>').join('') +
+        '<tr style="background:#f2f7f5;font-weight:700"><td>کل کشور</td><td>' +
+        faNum(st.clusters) + '</td><td>' + faNum(st.schools) + '</td><td>' +
+        faNum(st.maxSize) + '</td></tr>';
+      const note = document.getElementById('shareNote');
+      if (note) note.textContent = 'ستون «خوشه‌ها» در هر استان یعنی تعداد خوشه‌هایی که دست‌کم یک ' +
+        'مدرسه در آن استان دارند؛ یک خوشه که در چند استان پراکنده است در هر کدام شمرده می‌شود، ' +
+        'ولی «کل کشور» تعداد واقعی خوشه‌های همان آستانه است.';
     }
 
     // ---- province picker (collapsible <details>) ----
@@ -440,6 +521,7 @@
       state.prov = p;
       state.hiFounder = null;
       syncProvUI();
+      renderShareBreakdown(); // highlight the chosen province in the breakdown
       if (rerender !== false) {
         resetView();
         apply(false, true);
@@ -597,8 +679,9 @@
       const rows = arr.map((j, k) => {
         const t = sch[j];
         return '<tr' + (j === i ? ' style="background:#e3f0e9;font-weight:700"' : '') +
-          '><td>' + faNum(k + 1) + '</td><td>' + t[0] + '</td><td>' + dists[t[2]][1] +
-          '</td><td>' + stages[t[3]] + '</td><td>' + faNum(t[5]) + yearTag(t[8]) + '</td></tr>';
+          '><td>' + faNum(k + 1) + '</td><td>' + nameOf(j) + '</td><td>' + t[0] + '</td><td>' +
+          dists[t[2]][1] + '</td><td>' + stages[t[3]] + '</td><td>' +
+          faNum(t[5]) + yearTag(t[8]) + '</td></tr>';
       }).join('');
       const strong = arr.filter((j) => sch[j][9] === s[9]).length;
       sideBody.innerHTML =
@@ -607,8 +690,9 @@
         (strong > 1 ? ' · ' + faNum(strong) + ' مدرسه با نام یکسان' : '') + '</p>' +
         '<p class="legend">همین گروه روی گراف با خط پررنگ به هم وصل است. ' +
         'این جدول با حرکت ماوس روی جدول غیب نمی‌شود.</p>' +
-        '<div class="tblwrap"><table><thead><tr><th>#</th><th>کد</th><th>ناحیه</th>' +
-        '<th>مقطع</th><th>مجموع</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+        '<div class="tblwrap"><table><thead><tr><th>#</th><th>مدرسه</th><th>کد</th>' +
+        '<th>ناحیه</th><th>مقطع</th><th>مجموع</th></tr></thead><tbody>' +
+        rows + '</tbody></table></div>' +
         CLOSE_BTN;
     }
 
@@ -623,14 +707,15 @@
         const h = dists[d._h];
         const rows = hubMembers[d._h].slice(0, 20).map((i, k) => {
           const s = sch[i];
-          return '<tr><td>' + faNum(k + 1) + '</td><td>' + s[0] + '</td><td>' +
-            stages[s[3]] + '</td><td>' + faNum(s[5]) + yearTag(s[8]) + '</td></tr>';
+          return '<tr><td>' + faNum(k + 1) + '</td><td>' + nameOf(i) + '</td><td>' + s[0] +
+            '</td><td>' + stages[s[3]] + '</td><td>' + faNum(s[5]) + yearTag(s[8]) + '</td></tr>';
         }).join('');
         sideSchool = -1;
         document.getElementById('sideBody').innerHTML =
           '<p><b>' + h[1] + '</b> · ' + faNum(h[5]) + ' مدرسه · میانه ' + faNum(h[6]) + '</p>' +
           '<p><a href="../districts/' + h[7] + '.html">ورود به صفحه ناحیه ←</a></p>' +
-          '<div class="tblwrap"><table><thead><tr><th>#</th><th>کد</th><th>مقطع</th><th>مجموع</th></tr></thead><tbody>' +
+          '<div class="tblwrap"><table><thead><tr><th>#</th><th>مدرسه</th><th>کد</th>' +
+          '<th>مقطع</th><th>مجموع</th></tr></thead><tbody>' +
           rows + '</tbody></table></div>';
       } else if (d._i !== undefined) {
         const s = sch[d._i], hub = dists[s[2]];
@@ -681,6 +766,7 @@
       state.minShare = MAX_SHARE + 1; // back to "no share threshold"
       const sel = document.getElementById('shareSel');
       if (sel) sel.value = String(state.minShare);
+      renderShareBreakdown();
       dragPos.clear(); hubPos.clear(); // also undo any node the user moved
       syncProvUI();
       resetView();
