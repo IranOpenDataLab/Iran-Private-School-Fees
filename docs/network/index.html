@@ -13,7 +13,24 @@
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
 <script>if(!window.Fuse){document.write('<script src="https://unpkg.com/fuse.js@7.0.0/dist/fuse.min.js"></scr'+'ipt>')}</script>
 <script src="../assets/common.js"></script>
-<style>#net{width:100%;height:72vh;min-height:480px}#side{max-height:72vh;overflow:auto}</style>
+<style>#net{width:100%;height:72vh;min-height:480px}#side{max-height:72vh;overflow:auto}
+.provdd{flex:1 1 100%}
+.provdd>summary{cursor:pointer;padding:8px 14px;border:1px solid var(--acc);
+  border-radius:999px;background:#fff;color:var(--acc-d);font-weight:700}
+.provlist{list-style:none;margin:0;padding:8px;display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:6px;
+  max-height:300px;overflow:auto;border:1px solid var(--line);border-top:0;
+  border-radius:0 0 12px 12px;background:#fff}
+.provlist li{margin:0}
+.provlist button{width:100%;display:flex;justify-content:space-between;
+  align-items:baseline;gap:8px;background:#fff;color:var(--ink);
+  border:1px solid var(--line);border-radius:10px;padding:7px 10px;
+  font-size:.88rem;text-align:right}
+.provlist button:hover{background:var(--acc-soft);border-color:var(--acc)}
+.provlist button.on{background:var(--acc);border-color:var(--acc-d);color:#fff}
+.provlist button.on .pc{color:rgba(255,255,255,.85)}
+.provlist .pc{color:var(--muted);font-size:.8rem}
+</style>
 </head>
 <body>
 <nav class="topnav"><div class="navin">
@@ -37,6 +54,13 @@
 </div>
 <ul id="searchRes" hidden></ul>
 <div id="chips" class="row" style="margin:8px 0"></div>
+    <div class="row" style="margin:8px 0">
+      <details class="provdd" id="provDD">
+        <summary>🗺️ تفکیک استانی — نمایش: <b id="provLabel">کل کشور</b></summary>
+        <div class="tbar" style="padding:8px 10px 0"><input type="search" id="provQ" placeholder="جست‌وجوی استان…" autocomplete="off" aria-label="جست‌وجوی استان"></div>
+        <ul id="provList" class="provlist"></ul>
+      </details>
+    </div>
 <div class="row" style="margin:8px 0">
 <button class="ghost" id="tDist" type="button">یال ناحیه: خاموش</button>
 <button class="ghost" id="tFound" type="button">یال موسس: روشن</button>
@@ -48,7 +72,7 @@
 <div style="flex:3 1 480px"><div id="net" role="img" aria-label="گراف شبکه مدارس"></div></div>
 <div style="flex:1 1 220px" id="side"><h3 style="margin-top:0">📌 پنل ناحیه</h3><div id="sideBody"><p class="legend">روی یک گره ناحیه (دایره بزرگ) کلیک کنید.</p></div></div>
 </div>
-<p class="legend">اندازه گره مدرسه = ‎3 + 25·√(آخرین شهریه ثبت‌شده / بیشینه) — رنگ = مقطع. در زوم پایین labelها مخفی‌اند؛ با اسکرول/درگ بزرگ‌نمایی کنید. داده گراف بعد از اولین دانلود در حافظه مرورگر می‌ماند.</p>
+<p class="legend">اندازه گره مدرسه = ‎3 + 25·√(آخرین شهریه ثبت‌شده / بیشینه) — رنگ = مقطع. برای دیدن فقط یک استان، منوی «تفکیک استانی» را باز کنید. در زوم پایین labelها مخفی‌اند؛ با اسکرول/درگ بزرگ‌نمایی کنید. داده گراف بعد از اولین دانلود در حافظه مرورگر می‌ماند.</p>
 </section>
 <section id="fallback" hidden>
 <h2>جدول جایگزین</h2>
@@ -63,6 +87,7 @@
   const { faNum, faYear, normFa, debounce, fetchCached, profileModal, registerChart, FONT } = window.DSH;
   const getJSON = (u) => fetchCached(u);
   const TOTAL = 24648;
+  const PROVNAME = new Map(); // slug -> Persian province name (from by-province.json)
   const PALETTE = ['#1a7f5a', '#2a9d8f', '#e9c46a', '#e76f51', '#457b9d', '#9d4edd'];
   const HUB_COLOR = '#333333';
   const yearTag = (y) => y === 1405 ? '' : ' <small>(' + faYear(y || '—') + ')</small>';
@@ -114,10 +139,15 @@
     } catch (e) { showFallback(e.message || e); return; }
     try {
       say('دانلود داده گراف…');
+      // province names ride along with the big download (6 KB, usually cached)
+      const provMetaP = getJSON('../data/by-province.json').catch(() => null);
       const G = await withTimeout(fetchCached('../data/graph/full.json', (p) => {
         document.getElementById('pbar').style.width = p + '%';
         say('دانلود داده گراف: ' + faNum(p) + '٪');
       }), 150000, 'دانلود در ۱۵۰ ثانیه تمام نشد؛ اتصال خیلی کند است. دوباره تلاش کنید.');
+      (await provMetaP || []).forEach((p) => {
+        if (p && p.slug) PROVNAME.set(p.slug, p.province);
+      });
       say('ساخت گره‌ها…');
       await new Promise((r) => setTimeout(r, 30));
       buildGraph(chart, G, t0);
@@ -178,35 +208,52 @@
     const NULL_CAT = stages.length + 1;
     const nNull = sch.filter((s) => s[5] == null).length;
 
+    // ---- province membership: district -> pslug, plus per-province counts ----
+    const provOfDist = new Array(dists.length);
+    for (let k = 0; k < dists.length; k++) provOfDist[k] = dists[k][2];
+    const provOfSchool = new Array(sch.length);
+    const provCount = new Map(), provNoFee = new Map();
+    for (let i = 0; i < sch.length; i++) {
+      const p = provOfDist[sch[i][2]];
+      provOfSchool[i] = p;
+      provCount.set(p, (provCount.get(p) || 0) + 1);
+      if (sch[i][5] == null) provNoFee.set(p, (provNoFee.get(p) || 0) + 1);
+    }
+
     function buildNodes(dimStage, dimGender, hiFounder) {
-      const nodes = new Array(sch.length + dists.length);
+      const nodes = [];
+      const prov = state.prov;
       for (let i = 0; i < sch.length; i++) {
+        if (prov && provOfSchool[i] !== prov) continue;
         const s = sch[i];
         const nodisp = s[5] == null;
         const dim = (dimStage.has(s[3]) || dimGender.has(s[4])) ||
           (hiFounder && s[1] !== hiFounder);
-        nodes[i] = { id: 's' + s[0], name: 's' + s[0],
+        nodes.push({ id: 's' + s[0], name: 's' + s[0],
           // layout:'none' reads positions from x/y — NOT from value:[x,y]
           x: s[11], y: s[12], value: [s[11], s[12]],
           symbolSize: nodisp ? 1.5 : sizeOf(s[5]), category: nodisp ? NULL_CAT : s[3],
           itemStyle: dim ? { opacity: 0.06 } : {},
-          _i: i };
+          _i: i });
       }
       for (let k = 0; k < dists.length; k++) {
+        if (prov && provOfDist[k] !== prov) continue;
         const d = dists[k];
-        nodes[sch.length + k] = { id: 'h' + d[0], name: 'h' + d[0],
+        nodes.push({ id: 'h' + d[0], name: 'h' + d[0],
           x: d[3], y: d[4], value: [d[3], d[4]],
           symbolSize: 13, category: HUB_CAT,
           label: { show: true, formatter: d[1], fontSize: 10, color: '#111', fontFamily: FONT },
-          labelLayout: { hideOverlap: true }, _h: k };
+          labelLayout: { hideOverlap: true }, _h: k });
       }
       return nodes;
     }
 
     function buildLinks(showDist, showFound) {
       const links = [];
+      const prov = state.prov;
       if (showDist) {
         for (let i = 0; i < sch.length; i++) {
+          if (prov && provOfSchool[i] !== prov) continue;
           if (sch[i][5] == null) continue; // no tuition -> no district edge
           links.push({ source: 's' + sch[i][0], target: 'h' + sch[i][2],
             lineStyle: { color: '#999', opacity: 0.1, width: 1 } });
@@ -215,6 +262,7 @@
       if (showFound) {
         for (const arr of groups.values()) {
           for (let k = 1; k < arr.length; k++) {
+            if (prov && (provOfSchool[arr[k - 1]] !== prov || provOfSchool[arr[k]] !== prov)) continue;
             const a = sch[arr[k - 1]], b = sch[arr[k]];
             const strong = a[9] === b[9];
             links.push({ source: 's' + a[0], target: 's' + b[0], lineStyle: strong
@@ -227,7 +275,7 @@
     }
 
     const state = { dimStage: new Set(), dimGender: new Set(), hiFounder: null,
-      showDist: false, showFound: true };
+      showDist: false, showFound: true, prov: null };
 
     // NOTE: no custom zoom/center. ECharts' default graph view (zoom 1) already
     // fits this layout to the container; forcing a computed zoom shrank the
@@ -237,14 +285,64 @@
     }
 
     function writeCounter(withLinks) {
+      const prov = state.prov;
       const shown = state.hiFounder
-        ? sch.filter((s) => s[1] === state.hiFounder).length : TOTAL;
+        ? sch.filter((s) => s[1] === state.hiFounder).length
+        : (prov ? (provCount.get(prov) || 0) : TOTAL);
+      const nn = prov ? (provNoFee.get(prov) || 0) : nNull;
+      const head = state.hiFounder ? 'تمرکز روی خوشه موسس: '
+        : (prov ? 'استان ' + (PROVNAME.get(prov) || prov) + ': ' : 'نمایش ');
       document.getElementById('counter').textContent =
-        (state.hiFounder ? 'تمرکز روی خوشه موسس: ' : 'نمایش ') + faNum(shown) +
-        ' از ' + faNum(TOTAL) + ' مدرسه' +
-        (nNull ? ' (' + faNum(nNull) + ' بدون شهریه ثبت‌شده، خاکستری)' : '') +
+        head + faNum(shown) + ' از ' + faNum(TOTAL) + ' مدرسه' +
+        (nn ? ' (' + faNum(nn) + ' بدون شهریه ثبت‌شده، خاکستری)' : '') +
         (withLinks ? '' : ' · یال‌ها در راه‌اند…') +
         ((state.dimStage.size || state.dimGender.size) ? ' (بخشی کم‌رنگ شده با فیلتر)' : '');
+    }
+
+    // ---- province picker (collapsible <details>) ----
+    const provDD = document.getElementById('provDD');
+    const provList = document.getElementById('provList');
+    const provQ = document.getElementById('provQ');
+
+    function syncProvUI() {
+      document.getElementById('provLabel').textContent =
+        state.prov ? (PROVNAME.get(state.prov) || state.prov) : 'کل کشور';
+      provList.querySelectorAll('button[data-p]').forEach((b) => {
+        const on = (b.dataset.p === '__all') ? !state.prov : (b.dataset.p === state.prov);
+        b.classList.toggle('on', on);
+      });
+    }
+
+    function setProvince(p, rerender) {
+      state.prov = p;
+      state.hiFounder = null;
+      syncProvUI();
+      if (rerender !== false) {
+        resetView();
+        apply(false, true);
+      }
+    }
+
+    function buildProvList() {
+      const slugs = [...provCount.keys()].sort((a, b) =>
+        (PROVNAME.get(a) || a).localeCompare(PROVNAME.get(b) || b, 'fa'));
+      const render = () => {
+        const v = normFa(provQ.value || '');
+        const items = slugs.filter((s) => !v || normFa(PROVNAME.get(s) || s).includes(v));
+        const row = (p, label, n) => '<li><button type="button" data-p="' + p + '">' +
+          '<span>' + label + '</span><span class="pc">' + faNum(n) + ' مدرسه</span></button></li>';
+        provList.innerHTML = row('__all', 'کل کشور', TOTAL) +
+          items.map((s) => row(s, PROVNAME.get(s) || s, provCount.get(s) || 0)).join('');
+        syncProvUI();
+      };
+      provQ.addEventListener('input', debounce(render, 180));
+      provList.addEventListener('click', (ev) => {
+        const b = ev.target.closest('button[data-p]');
+        if (!b) return;
+        setProvince(b.dataset.p === '__all' ? null : b.dataset.p);
+        provDD.open = false; // close so the graph is visible right away
+      });
+      render();
     }
 
     function applyLinksOnly() {
@@ -295,6 +393,7 @@
     // phase 1: nodes only — a fast first frame at ECharts' default view
     const nodes0 = buildNodes(new Set(), new Set(), null);
     chart.setOption({ series: [{ data: nodes0, links: [] }] });
+    buildProvList();
     writeCounter(false);
 
     // phase 2: add edges after the first frame. setTimeout (NOT rAF): rAF does
@@ -378,6 +477,8 @@
     document.getElementById('reset').onclick = () => {
       state.dimStage.clear(); state.dimGender.clear(); state.hiFounder = null;
       chips.querySelectorAll('.chip').forEach((c) => c.classList.remove('off'));
+      state.prov = null;
+      syncProvUI();
       resetView();
       apply(false, true);
     };
@@ -405,6 +506,8 @@
         const gi = id2i.get(String(r.id));
         if (gi !== undefined) {
           const s = sch[gi];
+          // if the school is outside the current province view, switch to it
+          if (state.prov && provOfSchool[gi] !== state.prov) setProvince(provOfSchool[gi], false);
           state.hiFounder = groups.has(s[1]) ? s[1] : null;
           apply(true);
           chart.setOption({ series: [{ zoom: 9, center: [s[11], s[12]] }] });
